@@ -13,6 +13,9 @@ from utils.charts import (
     sentiment_histogram, correlation_heatmap, group_comparison_chart,
     sentiment_by_grade_chart,
 )
+from utils.theme import apply_theme
+
+apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 

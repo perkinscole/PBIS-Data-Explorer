@@ -9,7 +9,10 @@ from utils.charts import (
     likert_heatmap, grade_comparison_chart, yes_no_chart,
     category_radar_chart,
 )
+from utils.theme import apply_theme
 from pathlib import Path
+
+apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 

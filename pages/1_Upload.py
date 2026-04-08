@@ -4,6 +4,9 @@ import os
 import shutil
 from pathlib import Path
 from utils.data_loader import load_survey_file, load_all_surveys, parse_filename
+from utils.theme import apply_theme
+
+apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 SAMPLE_DIR = Path(__file__).parent.parent / "sample_data"

@@ -6,9 +6,12 @@ from utils.data_loader import (
     sort_periods, match_category, LIKERT_MAP, QUESTION_CATEGORIES,
 )
 from utils.charts import trend_line_chart
+from utils.theme import apply_theme
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
+
+apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 

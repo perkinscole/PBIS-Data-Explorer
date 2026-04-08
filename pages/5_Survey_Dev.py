@@ -5,7 +5,10 @@ from utils.data_loader import (
     get_open_response_columns, normalize_column_name, classify_column,
     compute_agreement_score, QUESTION_CATEGORIES, LIKERT_MAP,
 )
+from utils.theme import apply_theme
 from pathlib import Path
+
+apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
