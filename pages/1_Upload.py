@@ -182,13 +182,26 @@ if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
 
     for i, (df, meta) in enumerate(zip(st.session_state.surveys, st.session_state.survey_meta)):
         with st.expander(f"{meta['label']} ({len(df)} responses)"):
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
                 st.metric("Responses", len(df))
             with col2:
                 if "_grade" in df.columns:
                     grades = df["_grade"].value_counts()
                     st.metric("Grade Levels", len(grades))
+            with col3:
+                fname = df["_source_file"].iloc[0] if len(df) > 0 else ""
+                if fname and st.button("Delete", key=f"del_{i}", type="secondary"):
+                    fpath = DATA_DIR / fname
+                    if fpath.exists():
+                        fpath.unlink()
+                    # Remove from overrides too
+                    ov = load_overrides()
+                    ov.pop(fname, None)
+                    save_overrides(ov)
+                    st.session_state.surveys = []
+                    st.session_state.survey_meta = []
+                    st.rerun()
 
             st.markdown("**Preview:**")
             display_cols = [c for c in df.columns if not c.startswith("_")]
@@ -196,7 +209,7 @@ if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
 else:
     st.info("No data loaded yet. Upload survey files above to get started.")
 
-# Clear data option
+# Clear all data option
 if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
     st.markdown("---")
     if st.button("Clear All Data", type="secondary"):
