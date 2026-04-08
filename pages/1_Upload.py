@@ -18,7 +18,7 @@ MONTHS = [
     "June", "July", "August", "September", "October", "November", "December",
 ]
 
-SURVEY_TYPES = [None, 1, 2, 3]
+SURVEY_TYPES = ["Auto-detect", "Student", "Staff", "Parents and Family", "Kickboard"]
 
 
 def save_overrides(overrides):
@@ -112,13 +112,23 @@ if uploaded_files:
                 key=f"year_{f.name}",
             )
 
-        # Survey type
+        # Survey type - try to auto-detect "Student" from filename
+        detected_type_idx = 0  # default to Auto-detect
+        fname_lower = f.name.lower()
+        if "student" in fname_lower:
+            detected_type_idx = 1
+        elif "staff" in fname_lower:
+            detected_type_idx = 2
+        elif "parent" in fname_lower or "family" in fname_lower:
+            detected_type_idx = 3
+        elif "kickboard" in fname_lower:
+            detected_type_idx = 4
+
         with col3:
             survey_type = st.selectbox(
                 "Survey Type",
                 SURVEY_TYPES,
-                index=SURVEY_TYPES.index(detected["survey_num"]) if detected["survey_num"] in SURVEY_TYPES else 0,
-                format_func=lambda x: f"Student #{x}" if x else "Auto-detect",
+                index=detected_type_idx,
                 key=f"type_{f.name}",
             )
 
@@ -153,17 +163,18 @@ if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
             if fname in overrides:
                 ov = overrides[fname]
                 meta["period"] = ov["period"]
-                if ov.get("survey_num"):
-                    meta["survey_num"] = ov["survey_num"]
+                stype = ov.get("survey_num")
+                if stype and stype != "Auto-detect":
+                    meta["survey_num"] = stype
                 meta["label"] = (
-                    f"Survey #{meta['survey_num']} - {meta['period']}"
-                    if meta["survey_num"]
+                    f"{meta['survey_num']} - {meta['period']}"
+                    if meta.get("survey_num") and meta["survey_num"] != "Auto-detect"
                     else meta["period"]
                 )
                 # Update the DataFrame internal columns too
                 all_data[i]["_period"] = meta["period"]
                 all_data[i]["_label"] = meta["label"]
-                if ov.get("survey_num"):
+                if stype and stype != "Auto-detect":
                     all_data[i]["_survey_num"] = meta["survey_num"]
 
         st.session_state.surveys = all_data
