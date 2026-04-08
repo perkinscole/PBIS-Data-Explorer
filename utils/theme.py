@@ -15,6 +15,12 @@ THEME_CSS = """
     [data-testid="stSidebar"] .stMultiSelect label {
         color: #f0f0f0 !important;
     }
+    /* Dropdown option text should be black (readable on white background) */
+    [data-testid="stSidebar"] [data-baseweb="select"] span,
+    [data-testid="stSidebar"] [data-baseweb="select"] div[role="option"],
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] * {
+        color: #1a1a1a !important;
+    }
 
     /* Sidebar nav links */
     [data-testid="stSidebarNav"] a {
