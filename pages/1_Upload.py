@@ -13,23 +13,23 @@ SAMPLE_DIR = Path(__file__).parent.parent / "sample_data"
 
 st.title("Upload Survey Data")
 
-# Load sample data option
-st.markdown("### Quick Start")
-if st.button("Load Sample Data", help="Load the included example survey files"):
-    DATA_DIR.mkdir(exist_ok=True)
-    for f in SAMPLE_DIR.glob("*.xlsx"):
-        shutil.copy2(f, DATA_DIR / f.name)
-    st.session_state.surveys = []
-    st.session_state.survey_meta = []
-    st.success(f"Loaded {len(list(SAMPLE_DIR.glob('*.xlsx')))} sample survey files!")
-    st.rerun()
-
-st.markdown("---")
+# Load sample data option (only show if sample_data folder exists locally)
+if SAMPLE_DIR.exists() and list(SAMPLE_DIR.glob("*.xlsx")):
+    st.markdown("### Quick Start")
+    if st.button("Load Sample Data", help="Load the included example survey files"):
+        DATA_DIR.mkdir(exist_ok=True)
+        for f in SAMPLE_DIR.glob("*.xlsx"):
+            shutil.copy2(f, DATA_DIR / f.name)
+        st.session_state.surveys = []
+        st.session_state.survey_meta = []
+        st.success(f"Loaded {len(list(SAMPLE_DIR.glob('*.xlsx')))} sample survey files!")
+        st.rerun()
+    st.markdown("---")
 
 # File upload
-st.markdown("### Upload New Files")
+st.markdown("### Upload Survey Files")
 uploaded_files = st.file_uploader(
-    "Drop survey spreadsheets here",
+    "Drop survey spreadsheets here (.xlsx or .csv)",
     type=["xlsx", "csv"],
     accept_multiple_files=True,
 )
@@ -70,7 +70,7 @@ if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
             display_cols = [c for c in df.columns if not c.startswith("_")]
             st.dataframe(df[display_cols].head(10), use_container_width=True)
 else:
-    st.info("No data loaded yet. Upload files above or click 'Load Sample Data' to get started.")
+    st.info("No data loaded yet. Upload survey files above to get started.")
 
 # Clear data option
 if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
