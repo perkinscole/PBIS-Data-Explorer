@@ -122,7 +122,7 @@ def _get_logo_b64():
     return None
 
 
-ALL_SURVEY_TYPES = ["All Types", "Student", "Staff", "Parents and Family", "Kickboard"]
+ALL_SURVEY_TYPES = ["All Types", "Student", "Staff", "Parents and Family"]
 
 
 def apply_theme():
@@ -159,7 +159,7 @@ def _infer_survey_type(meta):
     survey_type = meta.get("survey_num")
 
     # Already a recognized string type
-    if survey_type in ("Student", "Staff", "Parents and Family", "Kickboard"):
+    if survey_type in ("Student", "Staff", "Parents and Family"):
         return survey_type
 
     # Old numeric types (1, 2, 3) from the original Student surveys
@@ -177,9 +177,6 @@ def _infer_survey_type(meta):
         return "Staff"
     elif "parent" in text or "family" in text:
         return "Parents and Family"
-    elif "kickboard" in text:
-        return "Kickboard"
-
     return None
 
 
@@ -207,7 +204,6 @@ def get_audience_label(selected_type):
         "Student": "students",
         "Staff": "staff members",
         "Parents and Family": "parents and families",
-        "Kickboard": "records",
         "All Types": "respondents",
     }
     return labels.get(selected_type, "respondents")

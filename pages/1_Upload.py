@@ -18,7 +18,7 @@ MONTHS = [
     "June", "July", "August", "September", "October", "November", "December",
 ]
 
-SURVEY_TYPES = ["Auto-detect", "Student", "Staff", "Parents and Family", "Kickboard"]
+SURVEY_TYPES = ["Auto-detect", "Student", "Staff", "Parents and Family"]
 
 
 def save_overrides(overrides):
@@ -121,8 +121,6 @@ if uploaded_files:
             detected_type_idx = 2
         elif "parent" in fname_lower or "family" in fname_lower:
             detected_type_idx = 3
-        elif "kickboard" in fname_lower:
-            detected_type_idx = 4
 
         with col3:
             survey_type = st.selectbox(
