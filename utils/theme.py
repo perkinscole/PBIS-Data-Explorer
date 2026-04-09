@@ -153,6 +153,36 @@ def get_survey_type_filter():
     )
 
 
+def _infer_survey_type(meta):
+    """Infer the survey type from metadata, handling old numeric types
+    and auto-detecting from label/filename keywords."""
+    survey_type = meta.get("survey_num")
+
+    # Already a recognized string type
+    if survey_type in ("Student", "Staff", "Parents and Family", "Kickboard"):
+        return survey_type
+
+    # Old numeric types (1, 2, 3) from the original Student surveys
+    if survey_type in (1, 2, 3):
+        return "Student"
+
+    # Try to detect from label or source file
+    label = str(meta.get("label", "")).lower()
+    source = str(meta.get("source_file", "")).lower()
+    text = label + " " + source
+
+    if "student" in text:
+        return "Student"
+    elif "staff" in text:
+        return "Staff"
+    elif "parent" in text or "family" in text:
+        return "Parents and Family"
+    elif "kickboard" in text:
+        return "Kickboard"
+
+    return None
+
+
 def filter_surveys_by_type(surveys, meta, selected_type):
     """Filter surveys and metadata by the selected survey type.
     Returns (filtered_surveys, filtered_meta)."""
@@ -162,9 +192,8 @@ def filter_surveys_by_type(surveys, meta, selected_type):
     filtered_surveys = []
     filtered_meta = []
     for df, m in zip(surveys, meta):
-        survey_type = m.get("survey_num", "")
-        # Match on the type string (e.g., "Student", "Staff")
-        if str(survey_type) == selected_type:
+        inferred = _infer_survey_type(m)
+        if inferred == selected_type:
             filtered_surveys.append(df)
             filtered_meta.append(m)
 

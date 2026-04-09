@@ -199,11 +199,24 @@ def compute_agreement_score(df, columns=None):
 
 
 def load_all_surveys(directory):
-    """Load all survey files from a directory."""
+    """Load all survey files from a directory, applying any saved overrides."""
+    import json
+
     all_data = []
     all_meta = []
 
-    xlsx_files = sorted(Path(directory).glob("*.xlsx"))
+    dir_path = Path(directory)
+    xlsx_files = sorted(dir_path.glob("*.xlsx"))
+
+    # Load overrides if they exist
+    meta_file = dir_path / "_metadata.json"
+    overrides = {}
+    if meta_file.exists():
+        try:
+            overrides = json.loads(meta_file.read_text())
+        except Exception:
+            pass
+
     seen = set()
     for f in xlsx_files:
         # Skip duplicate files (the (1) copy)
@@ -214,6 +227,25 @@ def load_all_surveys(directory):
 
         try:
             df, meta = load_survey_file(str(f))
+
+            # Apply overrides from upload page
+            fname = f.name
+            if fname in overrides:
+                ov = overrides[fname]
+                if ov.get("period"):
+                    meta["period"] = ov["period"]
+                    df["_period"] = ov["period"]
+                stype = ov.get("survey_num")
+                if stype and stype != "Auto-detect":
+                    meta["survey_num"] = stype
+                    df["_survey_num"] = stype
+                meta["label"] = (
+                    f"{meta['survey_num']} - {meta['period']}"
+                    if meta.get("survey_num") and str(meta["survey_num"]) not in ("None", "Auto-detect")
+                    else meta["period"]
+                )
+                df["_label"] = meta["label"]
+
             all_data.append(df)
             all_meta.append(meta)
         except Exception as e:

@@ -150,33 +150,9 @@ st.markdown("---")
 st.markdown("### Current Data Files")
 
 if DATA_DIR.exists() and list(DATA_DIR.glob("*.xlsx")):
-    # Load overrides for label display
-    overrides = load_overrides()
-
-    # Load all surveys if not cached
+    # Load all surveys if not cached (overrides applied automatically in load_all_surveys)
     if not st.session_state.get("surveys"):
         all_data, all_meta = load_all_surveys(str(DATA_DIR))
-
-        # Apply any saved overrides
-        for i, (df, meta) in enumerate(zip(all_data, all_meta)):
-            fname = df["_source_file"].iloc[0] if len(df) > 0 else ""
-            if fname in overrides:
-                ov = overrides[fname]
-                meta["period"] = ov["period"]
-                stype = ov.get("survey_num")
-                if stype and stype != "Auto-detect":
-                    meta["survey_num"] = stype
-                meta["label"] = (
-                    f"{meta['survey_num']} - {meta['period']}"
-                    if meta.get("survey_num") and meta["survey_num"] != "Auto-detect"
-                    else meta["period"]
-                )
-                # Update the DataFrame internal columns too
-                all_data[i]["_period"] = meta["period"]
-                all_data[i]["_label"] = meta["label"]
-                if stype and stype != "Auto-detect":
-                    all_data[i]["_survey_num"] = meta["survey_num"]
-
         st.session_state.surveys = all_data
         st.session_state.survey_meta = all_meta
 
