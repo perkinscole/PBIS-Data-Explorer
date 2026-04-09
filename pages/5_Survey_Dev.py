@@ -408,12 +408,57 @@ st.markdown(
     "New suggested questions are marked with a star."
 )
 
+selected_demographics = []
 selected_questions = []
 
-# Tab layout: existing vs new
-tab_existing, tab_new, tab_custom = st.tabs([
-    "Existing Questions", "Suggested New Questions", "Write Your Own"
+# Tab layout
+tab_demo, tab_existing, tab_new, tab_custom = st.tabs([
+    "Demographics", "Existing Questions", "Suggested New Questions", "Write Your Own"
 ])
+
+# --- Demographics tab ---
+DEMOGRAPHICS_BY_TYPE = {
+    "Student": [
+        {"question": "What grade am I in?", "type": "multiple_choice", "options": "6th Grade, 7th Grade, 8th Grade", "default": True},
+        {"question": "What is your gender?", "type": "multiple_choice", "options": "Male, Female, Non-binary, Prefer not to say", "default": False},
+        {"question": "What is your race/ethnicity?", "type": "multiple_choice", "options": "Asian, Black/African American, Hispanic/Latino, Native American, Pacific Islander, White, Two or more races, Prefer not to say", "default": False},
+        {"question": "How long have you been a student at RAMS?", "type": "multiple_choice", "options": "This is my first year, 2 years, 3 years", "default": False},
+        {"question": "Do you receive free or reduced lunch?", "type": "multiple_choice", "options": "Yes, No, I'm not sure", "default": False},
+        {"question": "Do you have an IEP or 504 plan?", "type": "multiple_choice", "options": "Yes, No, I'm not sure", "default": False},
+    ],
+    "Staff": [
+        {"question": "What is your role?", "type": "multiple_choice", "options": "Teacher, Administrator, Counselor, Support Staff, Paraprofessional, Other", "default": True},
+        {"question": "How many years have you worked at RAMS?", "type": "multiple_choice", "options": "Less than 1 year, 1-3 years, 4-6 years, 7-10 years, More than 10 years", "default": False},
+        {"question": "What grade level(s) do you primarily work with?", "type": "checkboxes", "options": "6th Grade, 7th Grade, 8th Grade, All grades", "default": False},
+        {"question": "What department or subject area do you work in?", "type": "short_text", "options": "", "default": False},
+    ],
+    "Parents and Family": [
+        {"question": "What grade(s) is your student in?", "type": "checkboxes", "options": "6th Grade, 7th Grade, 8th Grade", "default": True},
+        {"question": "How many students do you have at RAMS?", "type": "multiple_choice", "options": "1, 2, 3 or more", "default": False},
+        {"question": "How long has your student attended RAMS?", "type": "multiple_choice", "options": "This is their first year, 2 years, 3 years", "default": False},
+        {"question": "What is the primary language spoken at home?", "type": "multiple_choice", "options": "English, Spanish, Other", "default": False},
+        {"question": "How would you describe your involvement at RAMS?", "type": "multiple_choice", "options": "Very involved, Somewhat involved, Not very involved, Not involved at all", "default": False},
+    ],
+}
+
+with tab_demo:
+    st.markdown(f"*Select demographic questions to include for **{survey_audience}** surveys:*")
+    st.markdown(
+        "Demographic questions appear at the beginning of the survey and help "
+        "you break down results by group (e.g., by grade, role, or years at RAMS)."
+    )
+
+    demo_options = DEMOGRAPHICS_BY_TYPE.get(survey_audience, [])
+    for demo in demo_options:
+        checked = st.checkbox(
+            demo["question"],
+            value=demo["default"],
+            key=f"demo_{hash(demo['question'])}",
+        )
+        if demo["options"]:
+            st.caption(f"Options: {demo['options']}")
+        if checked:
+            selected_demographics.append(demo)
 
 with tab_existing:
     st.markdown("*Questions from your uploaded surveys:*")
@@ -483,34 +528,38 @@ with tab_custom:
 # Preview and export
 st.markdown("---")
 st.markdown("#### Survey Preview")
-st.markdown(f"**{len(selected_questions)} questions selected** for {survey_audience} survey")
+total_q = len(selected_demographics) + len(selected_questions)
+st.markdown(f"**{total_q} questions selected** for {survey_audience} survey ({len(selected_demographics)} demographic, {len(selected_questions)} survey)")
 
-if selected_questions:
+if selected_demographics or selected_questions:
     # Build the survey output
     lines = []
     lines.append(f"RAMS CARE Survey ({survey_audience})")
     lines.append("=" * 50)
     lines.append("")
 
-    # Always start with grade/role question
-    if survey_audience == "Student":
-        lines.append("1. What grade am I in?")
-        lines.append("   Type: Multiple choice")
-        lines.append("   Options: 6th Grade, 7th Grade, 8th Grade")
+    q_num = 1
+
+    # Demographics section
+    if selected_demographics:
+        lines.append("--- DEMOGRAPHICS ---")
         lines.append("")
-        q_num = 2
-    elif survey_audience == "Staff":
-        lines.append("1. What is your role?")
-        lines.append("   Type: Multiple choice")
-        lines.append("   Options: Teacher, Administrator, Counselor, Support Staff, Other")
+        for demo in selected_demographics:
+            lines.append(f"{q_num}. {demo['question']}")
+            type_label = {
+                "multiple_choice": "Multiple choice (single answer)",
+                "checkboxes": "Checkboxes (select all that apply)",
+                "short_text": "Short answer text",
+            }.get(demo["type"], demo["type"])
+            lines.append(f"   Type: {type_label}")
+            if demo["options"]:
+                lines.append(f"   Options: {demo['options']}")
+            lines.append("")
+            q_num += 1
+
+    if selected_questions:
+        lines.append("--- SURVEY QUESTIONS ---")
         lines.append("")
-        q_num = 2
-    else:
-        lines.append("1. What grade is your child in?")
-        lines.append("   Type: Multiple choice")
-        lines.append("   Options: 6th Grade, 7th Grade, 8th Grade, Multiple grades")
-        lines.append("")
-        q_num = 2
 
     for item in selected_questions:
         q = item["question"]
@@ -566,4 +615,4 @@ multiple Agree/Disagree questions with the same answer options.
         mime="text/plain",
     )
 else:
-    st.info("Select questions from the tabs above to build your survey.")
+    st.info("Select questions from the Demographics, Existing, or Suggested tabs to build your survey.")
