@@ -300,7 +300,7 @@ if "_grade" in df.columns and likert_cols:
     st.markdown("See how each grade's overall sentiment profile compares.")
 
     grade_profiles = []
-    for grade in sorted(df["_grade"].unique()):
+    for grade in sorted(df["_grade"].dropna().astype(str).unique()):
         grade_df = df[df["_grade"] == grade]
         grade_scores = compute_student_scores(grade_df)
         valid = grade_scores.dropna()
