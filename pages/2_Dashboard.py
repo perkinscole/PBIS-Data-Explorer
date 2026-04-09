@@ -94,7 +94,10 @@ if likert_cols:
     st.markdown("### CARE Category Scores")
     scores = compute_agreement_score(df, likert_cols)
     fig = category_radar_chart(scores)
-    st.plotly_chart(fig, use_container_width=True)
+    if fig:
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No questions matched the CARE categories for this survey.")
 
 # Grade/role comparison
 if likert_cols and "_grade" in df.columns:

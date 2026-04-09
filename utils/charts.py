@@ -157,6 +157,9 @@ def category_radar_chart(scores_dict, title="CARE Category Scores"):
         categories.append(cat.replace("_", " ").title())
         values.append(sum(s) / len(s))
 
+    if not categories:
+        return None
+
     fig = go.Figure(go.Scatterpolar(
         r=values + [values[0]],
         theta=categories + [categories[0]],
