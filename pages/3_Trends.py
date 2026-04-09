@@ -68,8 +68,20 @@ if len(surveys) >= 2:
     trend_df["Period"] = pd.Categorical(trend_df["Period"], categories=sorted_periods, ordered=True)
     trend_df = trend_df.sort_values("Period")
 
-    # Category filter
+    # Filters
     st.sidebar.markdown("### Filters")
+
+    # Period selector
+    selected_periods = st.sidebar.multiselect(
+        "Survey Periods",
+        sorted_periods,
+        default=sorted_periods,
+        help="Select which survey periods to include in the trend analysis",
+    )
+    trend_df = trend_df[trend_df["Period"].isin(selected_periods)]
+    sorted_periods = [p for p in sorted_periods if p in selected_periods]
+
+    # Category filter
     categories = sorted(trend_df["Category"].unique())
     category_labels = {c: c.replace("_", " ").title() for c in categories}
     selected_cats = st.sidebar.multiselect(
