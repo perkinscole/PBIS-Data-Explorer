@@ -17,25 +17,43 @@ YES_NO_MAP = {
 }
 
 # Canonical question categories for cross-survey comparison
+# Patterns match across student, staff, and family surveys
 QUESTION_CATEGORIES = {
     "school_belonging": [
         "I like school",
         "I feel like I fit in at RAMS",
         "I feel connected to others at RAMS",
         "Most days I look forward to going to school",
+        # Family
+        "I attend open-house",
+        "feel comfortable talking to teachers",
+        # Staff
+        "I feel valued",
+        "recommend RAMS as a place to work",
     ],
     "safety": [
-        "RAMS is a place where I feel safe",
+        "feel safe",
+        "feels safe",
     ],
     "success": [
-        "I feel successful at RAMS",
-        "I feel like RAMS has high standards for academic achievement",
+        "feel successful",
+        "feels successful",
+        "high standards for achievement",
+        "high standards for academic achievement",
+        "work hard to make sure that students do well",
+        "promote academic success",
     ],
     "teacher_respect": [
         "Teachers treat me with respect",
         "Adults in this school treat all students with respect",
         "Teachers treat all students fairly",
-        "I feel that teachers know their students and provide them with what they need to be successful",
+        "I feel that teachers know their students",
+        # Family
+        "Administrators at RAMS treat all students with respect",
+        "All students are treated fairly",
+        # Staff
+        "supported by administrators",
+        "acknowledged by your administrator",
     ],
     "student_respect": [
         "Students at RAMS treat each other with respect",
@@ -45,22 +63,40 @@ QUESTION_CATEGORIES = {
         "Students in RAMS are welcoming to new students",
     ],
     "care_values": [
-        "The RAMS CARE values of COMPASSION, ACCEPTANCE, RESPECT, EFFORT are",
-        "Are the RAMS CARE behavior expectations meaningful to you",
-        "Do you know what positive behaviors you are supposed to show at RAMS",
+        "RAMS CARE values",
+        "CARE behavior expectations",
+        "behavior expectations meaningful",
+        "positive behaviors you are supposed to show",
+        # Staff
+        "use the language of the behavior expectations",
+        "taught our school-wide expectations",
+        "teach and reteach behavior expectations",
     ],
     "behavior_support": [
-        "In the past week, did you see teachers/staff praise or reward other students",
-        "In the past week, did teachers/staff praise or reward YOU",
+        "praise or reward",
+        "positively acknowledge",
         "Do you think RAMS' use of",
+        # Staff
+        "Kickboard",
+        "acknowledgement system",
+        "RAMS CARE language",
+        # Family
+        "recognized for good behavior",
     ],
     "peer_connections": [
         "I know (at least one) student at RAMS that I can talk to",
         "I know (at least one) adult at RAMS that I can talk with",
+        # Staff
+        "acknowledged by other adults",
     ],
     "school_environment": [
         "RAMS sets clear rules for behavior",
         "Do you think the RAMS school community takes pride in keeping RAMS",
+        "rules are consistently enforced",
+        # Staff
+        "provide input into",
+        # Family
+        "communicate well with parents",
     ],
 }
 
