@@ -97,7 +97,8 @@ def classify_column(col_name, series=None):
     # Metadata columns
     metadata_patterns = [
         "timestamp", "what grade am i in?", "what is your role",
-        "what grade is your child",
+        "what grade is your child", "please indicate the grade",
+        "approximately, how frequently",
     ]
     if any(col_lower.startswith(p) or col_lower == p for p in metadata_patterns):
         return "metadata"
@@ -172,14 +173,16 @@ def load_survey_file(filepath):
     df["_period"] = meta["period"]
     df["_label"] = meta["label"]
 
-    grade_col = [c for c in df.columns if "grade" in c.lower()]
+    # Detect grade/role column (students: "What grade", parents: "indicate the grade", staff: role)
+    grade_col = [c for c in df.columns if "grade" in c.lower() or "what is your role" in c.lower()]
     if grade_col:
         raw_grade = df[grade_col[0]].astype(str).str.strip()
         # Filter out junk: Likert responses, numeric garbage, NaN
         invalid_values = {
             "strongly agree", "somewhat agree", "somewhat disagree",
             "strongly disagree", "yes", "no", "nan", "none", "",
-            "n/a", "n/a (non-applicable)",
+            "n/a", "n/a (non-applicable)", "never",
+            "0-2 times/week", "3-5 times/week", "more than 5 times/week",
         }
         raw_grade = raw_grade.where(
             ~raw_grade.str.lower().isin(invalid_values), other=pd.NA
