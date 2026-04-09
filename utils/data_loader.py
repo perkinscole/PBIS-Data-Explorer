@@ -89,26 +89,57 @@ def parse_filename(filename):
     }
 
 
-def classify_column(col_name):
-    """Classify a column as likert, yes_no, open_response, or metadata."""
+def classify_column(col_name, series=None):
+    """Classify a column as likert, yes_no, open_response, or metadata.
+    If a pandas Series is provided, uses actual values for smarter detection."""
     col_lower = col_name.lower().strip()
-    if col_lower in ("timestamp", "what grade am i in?"):
+
+    # Metadata columns
+    metadata_patterns = [
+        "timestamp", "what grade am i in?", "what is your role",
+        "what grade is your child",
+    ]
+    if any(col_lower.startswith(p) or col_lower == p for p in metadata_patterns):
         return "metadata"
 
+    # Open response keywords (questions asking for free text)
     open_keywords = [
-        "one thing",
-        "name one",
-        "what types of prizes",
-        "please tell us why",
+        "one thing", "name one", "what types of prizes", "please tell us why",
+        "how would you improve", "what are some barriers", "what are some",
+        "what would you", "what do you suggest", "what else", "please describe",
+        "please explain", "any other", "additional comments", "what changes",
     ]
     if any(kw in col_lower for kw in open_keywords):
         return "open_response"
 
+    # If we have actual data, use it for smarter classification
+    if series is not None:
+        values = series.dropna().astype(str).str.strip()
+        if len(values) > 0:
+            unique_vals = set(values.str.lower().unique())
+            # Check if values are Likert
+            likert_vals = {"strongly agree", "somewhat agree", "somewhat disagree", "strongly disagree"}
+            if unique_vals & likert_vals:
+                return "likert"
+            # Check if values are Yes/No
+            yes_no_vals = {"yes", "no", "n/a", "n/a (non-applicable)"}
+            if unique_vals and unique_vals.issubset(yes_no_vals | {""}):
+                return "yes_no"
+            # If most values are long text, it's open response
+            avg_len = values.str.len().mean()
+            if avg_len > 50:
+                return "open_response"
+            # If only Yes/No present even mixed with some other vals
+            if len(unique_vals) <= 5 and unique_vals & {"yes", "no"}:
+                return "yes_no"
+
+    # Keyword-based fallback for yes/no
     yes_no_keywords = [
         "are the rams care behavior expectations",
         "do you know what positive behaviors",
         "in the past week",
         "have you traded",
+        "did you", "have you", "do you use", "do you think",
     ]
     if any(kw in col_lower for kw in yes_no_keywords):
         return "yes_no"
@@ -160,17 +191,17 @@ def load_survey_file(filepath):
 
 def get_likert_columns(df):
     """Return columns that contain Likert scale responses."""
-    return [c for c in df.columns if not c.startswith("_") and classify_column(c) == "likert"]
+    return [c for c in df.columns if not c.startswith("_") and classify_column(c, df[c]) == "likert"]
 
 
 def get_yes_no_columns(df):
     """Return columns that contain Yes/No responses."""
-    return [c for c in df.columns if not c.startswith("_") and classify_column(c) == "yes_no"]
+    return [c for c in df.columns if not c.startswith("_") and classify_column(c, df[c]) == "yes_no"]
 
 
 def get_open_response_columns(df):
     """Return columns that contain open-ended text responses."""
-    return [c for c in df.columns if not c.startswith("_") and classify_column(c) == "open_response"]
+    return [c for c in df.columns if not c.startswith("_") and classify_column(c, df[c]) == "open_response"]
 
 
 def compute_likert_summary(df, columns=None):

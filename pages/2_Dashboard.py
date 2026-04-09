@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from utils.data_loader import (
     load_all_surveys, get_likert_columns, get_yes_no_columns,
     get_open_response_columns, compute_likert_summary,
@@ -50,22 +51,24 @@ selected_idx = st.sidebar.selectbox(
 df = surveys[selected_idx]
 info = meta[selected_idx]
 
-# Grade/role filter - adapt label based on survey type
+# Grade/role filter
 if "_grade" in df.columns:
     unique_vals = sorted(df["_grade"].dropna().astype(str).unique())
-    filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
-    selected_vals = st.sidebar.multiselect(filter_label, unique_vals, default=unique_vals)
-    df = df[df["_grade"].isin(selected_vals)]
+    if unique_vals:
+        filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
+        selected_vals = st.sidebar.multiselect(filter_label, unique_vals, default=unique_vals)
+        df = df[df["_grade"].astype(str).isin(selected_vals)]
 
 st.markdown(f"**{info['label']}** | {len(df)} responses")
 
-# Overview metrics
-st.markdown("### Overview")
-cols = st.columns(4)
+# Classify columns
 likert_cols = get_likert_columns(df)
 yes_no_cols = get_yes_no_columns(df)
 open_cols = get_open_response_columns(df)
 
+# Overview metrics
+st.markdown("### Overview")
+cols = st.columns(4)
 cols[0].metric("Total Responses", len(df))
 cols[1].metric("Likert Questions", len(likert_cols))
 cols[2].metric("Yes/No Questions", len(yes_no_cols))
@@ -73,24 +76,26 @@ cols[3].metric("Open-Ended Questions", len(open_cols))
 
 # Grade/role distribution
 if "_grade" in df.columns:
-    dist_label = "Grade Distribution" if selected_type in ("Student", "All Types") else "Role Distribution"
-    st.markdown(f"### {dist_label}")
-    grade_counts = df["_grade"].value_counts().sort_index().reset_index()
-    grade_counts.columns = ["Group", "Count"]
-    import plotly.express as px
-    fig = px.bar(grade_counts, x="Group", y="Count", color="Count",
-                 color_continuous_scale="Viridis")
-    st.plotly_chart(fig, use_container_width=True)
+    grade_vals = df["_grade"].dropna()
+    if len(grade_vals) > 0:
+        dist_label = "Grade Distribution" if selected_type in ("Student", "All Types") else "Role Distribution"
+        st.markdown(f"### {dist_label}")
+        grade_counts = grade_vals.value_counts().sort_index().reset_index()
+        grade_counts.columns = ["Group", "Count"]
+        fig = px.bar(grade_counts, x="Group", y="Count", color="Count",
+                     color_continuous_scale="Viridis")
+        st.plotly_chart(fig, use_container_width=True)
 
-# Likert response heatmap
+# ============================================================
+# Likert questions (Agree/Disagree scale)
+# ============================================================
 if likert_cols:
     st.markdown("### Agreement Levels")
     summary = compute_likert_summary(df, likert_cols)
     fig = likert_heatmap(summary, title=f"How {audience} responded to each question")
     st.plotly_chart(fig, use_container_width=True)
 
-# Category radar
-if likert_cols:
+    # Category radar
     st.markdown("### CARE Category Scores")
     scores = compute_agreement_score(df, likert_cols)
     fig = category_radar_chart(scores)
@@ -99,27 +104,95 @@ if likert_cols:
     else:
         st.info("No questions matched the CARE categories for this survey.")
 
-# Grade/role comparison
-if likert_cols and "_grade" in df.columns:
-    compare_label = "Compare by Grade" if selected_type in ("Student", "All Types") else "Compare by Role"
-    st.markdown(f"### {compare_label}")
-    full_df = surveys[selected_idx]
-    selected_q = st.selectbox(
-        "Select question",
-        likert_cols,
-        format_func=lambda c: normalize_column_name(c)[:80],
-    )
-    fig = grade_comparison_chart(full_df, selected_q)
-    if fig:
-        st.plotly_chart(fig, use_container_width=True)
+    # Grade/role comparison for Likert
+    if "_grade" in df.columns:
+        compare_label = "Compare by Grade" if selected_type in ("Student", "All Types") else "Compare by Role"
+        st.markdown(f"### {compare_label}")
+        full_df = surveys[selected_idx]
+        selected_q = st.selectbox(
+            "Select question",
+            likert_cols,
+            format_func=lambda c: normalize_column_name(c)[:80],
+        )
+        fig = grade_comparison_chart(full_df, selected_q)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
 
+# ============================================================
 # Yes/No questions
+# ============================================================
 if yes_no_cols:
     st.markdown("### Yes/No Questions")
-    fig = yes_no_chart(df, yes_no_cols)
+    fig = yes_no_chart(df, yes_no_cols, title=f"How {audience} responded to Yes/No questions")
     st.plotly_chart(fig, use_container_width=True)
 
+    # Yes rate summary table
+    st.markdown("#### Response Summary")
+    yn_summary = []
+    for col in yes_no_cols:
+        counts = df[col].value_counts()
+        total = counts.sum()
+        yes_count = counts.get("Yes", 0)
+        no_count = counts.get("No", 0)
+        yes_pct = (yes_count / total * 100) if total > 0 else 0
+        yn_summary.append({
+            "Question": normalize_column_name(col)[:70],
+            "Yes": int(yes_count),
+            "No": int(no_count),
+            "Yes %": f"{yes_pct:.0f}%",
+            "Total": int(total),
+        })
+    yn_df = pd.DataFrame(yn_summary).sort_values("Yes %", ascending=False)
+
+    def color_yes_pct(val):
+        try:
+            pct = int(val.replace("%", ""))
+            if pct >= 75:
+                return "background-color: #d5f5e3"
+            elif pct >= 50:
+                return "background-color: #fef9e7"
+            else:
+                return "background-color: #fadbd8"
+        except Exception:
+            return ""
+
+    st.dataframe(
+        yn_df.style.map(color_yes_pct, subset=["Yes %"]),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    # Yes/No by grade/role breakdown
+    if "_grade" in df.columns and len(yes_no_cols) > 0:
+        grade_vals = df["_grade"].dropna().unique()
+        if len(grade_vals) > 1:
+            compare_label = "Compare by Grade" if selected_type in ("Student", "All Types") else "Compare by Role"
+            st.markdown(f"### {compare_label} (Yes/No)")
+            selected_yn_q = st.selectbox(
+                "Select question",
+                yes_no_cols,
+                format_func=lambda c: normalize_column_name(c)[:70],
+                key="yn_grade_q",
+            )
+            yn_grade_data = df[["_grade", selected_yn_q]].dropna()
+            yn_grade_data = yn_grade_data[yn_grade_data[selected_yn_q].isin(["Yes", "No"])]
+            if len(yn_grade_data) > 0:
+                ct = yn_grade_data.groupby(["_grade", selected_yn_q]).size().reset_index(name="Count")
+                fig = px.bar(
+                    ct,
+                    x="_grade",
+                    y="Count",
+                    color=selected_yn_q,
+                    barmode="group",
+                    color_discrete_map={"Yes": "#2ecc71", "No": "#e74c3c"},
+                    title=normalize_column_name(selected_yn_q)[:70],
+                )
+                fig.update_layout(xaxis_title="Group", yaxis_title="Count")
+                st.plotly_chart(fig, use_container_width=True)
+
+# ============================================================
 # Open responses
+# ============================================================
 if open_cols:
     st.markdown("### Open-Ended Responses")
     selected_open = st.selectbox(
@@ -162,3 +235,7 @@ if open_cols:
         st.markdown(f"- {resp}")
     if len(responses) > 50:
         st.caption(f"Showing 50 of {len(responses)} responses")
+
+# No questions at all
+if not likert_cols and not yes_no_cols and not open_cols:
+    st.warning("No survey questions detected in this file. Check that the file format is correct.")
