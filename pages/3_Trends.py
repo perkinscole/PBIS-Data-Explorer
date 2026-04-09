@@ -160,18 +160,25 @@ if len(surveys) >= 2:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            # Highlight top movers
+            # Highlight top movers - only show actual improvements/declines
+            improved = change_df[change_df["Change"] > 0].nlargest(5, "Change")
+            declined = change_df[change_df["Change"] < 0].nsmallest(5, "Change")
+
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("**Most Improved**")
-                top_improved = change_df.nlargest(5, "Change")
-                for _, row in top_improved.iterrows():
-                    st.markdown(f"- **+{row['Change']:.2f}** {row['Question'][:60]}")
+                if len(improved) > 0:
+                    for _, row in improved.iterrows():
+                        st.markdown(f"- **+{row['Change']:.2f}** {row['Question'][:60]}")
+                else:
+                    st.markdown("*No questions improved between these periods.*")
             with col2:
                 st.markdown("**Most Declined**")
-                top_declined = change_df.nsmallest(5, "Change")
-                for _, row in top_declined.iterrows():
-                    st.markdown(f"- **{row['Change']:.2f}** {row['Question'][:60]}")
+                if len(declined) > 0:
+                    for _, row in declined.iterrows():
+                        st.markdown(f"- **{row['Change']:.2f}** {row['Question'][:60]}")
+                else:
+                    st.markdown("*No questions declined between these periods.*")
 
 # ============================================================
 # CROSS-SURVEY TYPE COMPARISON
