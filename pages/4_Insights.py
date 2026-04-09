@@ -76,26 +76,40 @@ contradictions = detect_contradictions(df)
 any_flag = straightliners | data_errors | contradictions
 clean_count = (~any_flag).sum()
 flagged_count = any_flag.sum()
+quality_pct = clean_count / len(df) * 100 if len(df) > 0 else 100
+
+# Color-coded quality panel
+if quality_pct >= 90:
+    panel_color = "#d5f5e3"  # green
+    panel_border = "#27ae60"
+    panel_icon = "checkmark"
+elif quality_pct >= 75:
+    panel_color = "#fef9e7"  # yellow
+    panel_border = "#f39c12"
+    panel_icon = "warning"
+else:
+    panel_color = "#fadbd8"  # red
+    panel_border = "#e74c3c"
+    panel_icon = "error"
+
+st.markdown(
+    f'<div style="background-color:{panel_color}; border-left: 5px solid {panel_border}; '
+    f'padding: 16px 20px; border-radius: 6px; margin-bottom: 16px;">'
+    f'<strong style="font-size: 1.2em;">{quality_pct:.0f}% of responses look reliable</strong><br>'
+    f'{int(clean_count)} clean out of {len(df)} total &nbsp;|&nbsp; '
+    f'{int(flagged_count)} flagged</div>',
+    unsafe_allow_html=True,
+)
 
 # Summary metrics
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total Responses", len(df))
-col2.metric("Clean Responses", int(clean_count), help="Responses with no quality flags")
-col3.metric("Straight-liners", int(straightliners.sum()),
+col2.metric("Straight-liners", int(straightliners.sum()),
             help="Same answer for every question")
-col4.metric("Data Errors", int(data_errors.sum()),
+col3.metric("Data Errors", int(data_errors.sum()),
             help="Non-standard values in response columns")
-col5.metric("Contradictions", int(contradictions.sum()),
+col4.metric("Contradictions", int(contradictions.sum()),
             help="Highly inconsistent across categories")
-
-if flagged_count > 0:
-    quality_pct = clean_count / len(df) * 100
-    if quality_pct >= 90:
-        st.success(f"**{quality_pct:.0f}% of responses look reliable.** Only {flagged_count} flagged.")
-    elif quality_pct >= 75:
-        st.warning(f"**{quality_pct:.0f}% of responses look reliable.** {flagged_count} responses flagged - review below.")
-    else:
-        st.error(f"**{quality_pct:.0f}% of responses look reliable.** {flagged_count} responses flagged - significant data quality issues.")
 
 # Expandable details for each flag type
 with st.expander("What do these flags mean?"):
@@ -179,7 +193,7 @@ st.markdown(
     "follow-up. These are the questions most connected to wellbeing."
 )
 
-indicators = get_at_risk_indicators(df)
+indicators = get_at_risk_indicators(df, survey_type=selected_type)
 if indicators:
     cols = st.columns(min(len(indicators), 3))
     for i, (label, info) in enumerate(indicators.items()):
@@ -187,7 +201,7 @@ if indicators:
         pct = info["count"] / info["total"] * 100 if info["total"] > 0 else 0
         col.metric(
             label,
-            f'{info["count"]} students',
+            f'{info["count"]} {audience}',
             f"{pct:.1f}% of respondents",
             delta_color="inverse",
         )
@@ -206,7 +220,7 @@ st.markdown(
 )
 
 # Auto-generated insights
-insights = generate_key_insights(df)
+insights = generate_key_insights(df, audience=audience)
 if insights:
     st.markdown("### Key Findings")
     for insight in sorted(insights, key=lambda x: x["severity"], reverse=True):

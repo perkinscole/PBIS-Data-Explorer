@@ -189,7 +189,7 @@ for cat, info in sorted(category_coverage.items()):
         else:
             st.markdown("*No questions in this category yet.*")
 
-# --- Section 4: Suggested Improvements ---
+# --- Section 4: Suggested Improvements (type-aware) ---
 st.markdown("---")
 st.markdown("### Suggested Improvements")
 
@@ -203,26 +203,65 @@ for cat, info in category_coverage.items():
             "Consider adding more questions to better capture this dimension."
         )
 
-# Check for missing categories in specific surveys
-for df, m in zip(surveys, meta):
-    likert = get_likert_columns(df)
-    if not any("safe" in c.lower() for c in likert):
-        suggestions.append(
-            f"**{m['label']}** may be missing a question about student safety. "
-            "The 'I feel safe' question is important for PBIS assessment."
-        )
+# Type-specific suggestions
+SUGGESTIONS_BY_TYPE = {
+    "Student": [
+        "Consider adding questions about **student voice and agency** - "
+        "e.g., 'I feel my opinions are valued at RAMS.'",
+        "Consider adding questions about **social-emotional learning** - "
+        "e.g., 'I have learned strategies to manage my emotions at RAMS.'",
+        "Consider adding questions about **family/community connection** - "
+        "e.g., 'My family feels welcome at RAMS.'",
+        "Consider differentiating between **in-class** and **outside-class** experiences - "
+        "students may feel differently about hallways, cafeteria, etc. vs. classrooms.",
+        "Consider adding a question about **peer relationships online** - "
+        "e.g., 'Students at RAMS are kind to each other on social media.'",
+    ],
+    "Staff": [
+        "Consider adding questions about **professional development** - "
+        "e.g., 'I have received adequate training on PBIS practices.'",
+        "Consider adding questions about **collaboration** - "
+        "e.g., 'Staff at RAMS work together to support student behavior.'",
+        "Consider adding questions about **administrative support** - "
+        "e.g., 'I feel supported by administrators when handling behavior issues.'",
+        "Consider adding questions about **staff wellbeing** - "
+        "e.g., 'I feel valued as a member of the RAMS community.'",
+        "Consider adding questions about **consistency** - "
+        "e.g., 'RAMS CARE expectations are applied consistently across classrooms.'",
+        "Consider adding questions about **data use** - "
+        "e.g., 'I use behavior data (Kickboard) to inform my teaching practices.'",
+    ],
+    "Parents and Family": [
+        "Consider adding questions about **communication quality** - "
+        "e.g., 'I understand the behavior expectations at RAMS.'",
+        "Consider adding questions about **engagement opportunities** - "
+        "e.g., 'RAMS provides meaningful ways for families to be involved.'",
+        "Consider adding questions about **home-school connection** - "
+        "e.g., 'I know how to support the CARE values at home.'",
+        "Consider adding questions about **transparency** - "
+        "e.g., 'I am kept informed about my child's behavioral progress.'",
+        "Consider adding questions about **accessibility** - "
+        "e.g., 'RAMS communication is available in languages my family speaks.'",
+        "Consider adding questions about **trust** - "
+        "e.g., 'I trust that my child is treated fairly at RAMS.'",
+    ],
+}
 
-# General suggestions
-suggestions.extend([
-    "Consider adding questions about **student voice and agency** - "
-    "e.g., 'I feel my opinions are valued at RAMS.'",
-    "Consider adding questions about **social-emotional learning** - "
-    "e.g., 'I have learned strategies to manage my emotions at RAMS.'",
-    "Consider adding questions about **family/community connection** - "
-    "e.g., 'My family feels welcome at RAMS.'",
-    "Consider differentiating between **in-class** and **outside-class** experiences - "
-    "students may feel differently about hallways, cafeteria, etc. vs. classrooms.",
-])
+# Add type-specific suggestions
+type_suggestions = SUGGESTIONS_BY_TYPE.get(selected_type, [])
+if not type_suggestions and selected_type == "All Types":
+    type_suggestions = SUGGESTIONS_BY_TYPE["Student"]
+suggestions.extend(type_suggestions)
+
+# Check for missing safety questions across survey types
+for df_check, m in zip(surveys, meta):
+    likert = get_likert_columns(df_check)
+    all_cols = [c.lower() for c in likert]
+    if not any("safe" in c for c in all_cols):
+        suggestions.append(
+            f"**{m['label']}** may be missing a question about safety. "
+            "Safety questions are a key PBIS indicator across all survey types."
+        )
 
 for i, s in enumerate(suggestions, 1):
     st.markdown(f"{i}. {s}")
@@ -235,8 +274,8 @@ st.markdown(
     "The output is formatted so you can copy it directly into **Google Forms**."
 )
 
-# Question bank: pull from all existing questions + new suggestions
-SUGGESTED_NEW_QUESTIONS = {
+# Question bank organized by survey type
+SUGGESTED_STUDENT_QUESTIONS = {
     "School Belonging": [
         ("I feel like my opinions are heard and valued at RAMS.", "likert"),
         ("I feel welcome when I walk into RAMS each day.", "likert"),
@@ -274,10 +313,85 @@ SUGGESTED_NEW_QUESTIONS = {
         ("RAMS is a clean and well-maintained school.", "likert"),
         ("I feel proud to be a student at RAMS.", "likert"),
     ],
-    "Family & Community": [
-        ("My family feels welcome at RAMS.", "likert"),
-        ("RAMS does a good job communicating with my family.", "likert"),
+}
+
+SUGGESTED_STAFF_QUESTIONS = {
+    "PBIS Implementation": [
+        ("I have received adequate training on PBIS/RAMS CARE practices.", "likert"),
+        ("I feel confident implementing RAMS CARE expectations in my classroom.", "likert"),
+        ("I have had input into developing our school-wide behavior expectations.", "yes_no"),
     ],
+    "Collaboration & Support": [
+        ("Staff at RAMS work together to support student behavior.", "likert"),
+        ("I feel supported by administrators when handling behavior issues.", "likert"),
+        ("I feel valued as a member of the RAMS community.", "likert"),
+    ],
+    "Consistency": [
+        ("RAMS CARE expectations are applied consistently across classrooms.", "likert"),
+        ("I teach and reteach behavior expectations regularly.", "yes_no"),
+        ("I use the RAMS CARE language when acknowledging positive behavior.", "yes_no"),
+    ],
+    "Acknowledgement & Recognition": [
+        ("I feel recognized for my efforts to promote positive behavior.", "likert"),
+        ("The student acknowledgement system (Kickboard) is effective.", "likert"),
+        ("I positively acknowledge students at least daily.", "yes_no"),
+    ],
+    "Data & Improvement": [
+        ("I use behavior data to inform my teaching practices.", "yes_no"),
+        ("Our team reviews behavior data regularly to make decisions.", "yes_no"),
+    ],
+    "Staff Wellbeing": [
+        ("I feel safe at RAMS.", "likert"),
+        ("I would recommend RAMS as a place to work.", "likert"),
+    ],
+    "Open Feedback": [
+        ("What barriers do you face in implementing RAMS CARE expectations?", "open_response"),
+        ("What is working well with our PBIS approach that we should continue?", "open_response"),
+    ],
+}
+
+SUGGESTED_FAMILY_QUESTIONS = {
+    "Safety & Wellbeing": [
+        ("My child feels safe at RAMS.", "likert"),
+        ("My child feels safe traveling to and from RAMS.", "likert"),
+        ("My child feels successful at RAMS.", "likert"),
+    ],
+    "School Climate": [
+        ("All students are treated fairly at RAMS.", "likert"),
+        ("RAMS has high standards for academic achievement.", "likert"),
+        ("RAMS sets clear rules for behavior.", "likert"),
+        ("School rules are consistently enforced at RAMS.", "likert"),
+    ],
+    "Communication & Engagement": [
+        ("RAMS staff communicate well with parents and caregivers.", "likert"),
+        ("I feel comfortable talking to teachers at RAMS.", "likert"),
+        ("I am kept informed about my child's behavioral progress.", "likert"),
+        ("RAMS provides meaningful ways for families to be involved.", "likert"),
+    ],
+    "CARE Values": [
+        ("I understand the RAMS CARE values (Compassion, Acceptance, Respect, Effort).", "likert"),
+        ("I know how to support the CARE values at home.", "likert"),
+        ("My child is recognized for good behavior at RAMS.", "likert"),
+    ],
+    "Respect & Trust": [
+        ("Administrators at RAMS treat all students with respect.", "likert"),
+        ("I trust that my child is treated fairly at RAMS.", "likert"),
+    ],
+    "Accessibility": [
+        ("RAMS communication is available in languages my family speaks.", "likert"),
+        ("I attend open-house and other events hosted by RAMS.", "likert"),
+    ],
+    "Open Feedback": [
+        ("What is RAMS doing well to support your child?", "open_response"),
+        ("What could RAMS improve to better support families?", "open_response"),
+    ],
+}
+
+# Pick the right question bank based on generator audience
+SUGGESTED_QUESTIONS_BY_TYPE = {
+    "Student": SUGGESTED_STUDENT_QUESTIONS,
+    "Staff": SUGGESTED_STAFF_QUESTIONS,
+    "Parents and Family": SUGGESTED_FAMILY_QUESTIONS,
 }
 
 # Survey type selector
@@ -331,8 +445,9 @@ with tab_existing:
                 })
 
 with tab_new:
-    st.markdown("*Suggested additions based on PBIS best practices:*")
-    for cat, questions in SUGGESTED_NEW_QUESTIONS.items():
+    suggested_qs = SUGGESTED_QUESTIONS_BY_TYPE.get(survey_audience, SUGGESTED_STUDENT_QUESTIONS)
+    st.markdown(f"*Suggested additions for **{survey_audience}** surveys based on PBIS best practices:*")
+    for cat, questions in suggested_qs.items():
         st.markdown(f"**{cat}**")
         for q, qtype in questions:
             if st.checkbox(f"  {q}", key=f"nq_{hash(q)}"):

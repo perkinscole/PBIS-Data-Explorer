@@ -327,7 +327,13 @@ def get_all_questions(dataframes):
 
 # --- Student-level analysis functions ---
 
+# All valid structured response values (not just 4-point Likert)
 VALID_LIKERT_VALUES = set(LIKERT_MAP.keys())
+VALID_STRUCTURED_VALUES = VALID_LIKERT_VALUES | {
+    "Never", "Sometimes", "Frequently", "Always",
+    "Yes", "No", "N/A", "N/A (Non-applicable)",
+    "never", "sometimes", "frequently", "always",
+}
 
 # School-context sentiment words for open response analysis
 POSITIVE_WORDS = {
@@ -375,15 +381,17 @@ def detect_straightliners(df):
 
 
 def detect_data_errors(df):
-    """Flag rows that have non-Likert values in Likert columns.
+    """Flag rows that have unexpected values in structured response columns.
     Returns boolean Series (True = has errors)."""
     likert_cols = get_likert_columns(df)
-    if not likert_cols:
+    yes_no_cols = get_yes_no_columns(df)
+    check_cols = likert_cols + yes_no_cols
+    if not check_cols:
         return pd.Series(False, index=df.index)
 
     has_error = pd.Series(False, index=df.index)
-    for col in likert_cols:
-        invalid = ~df[col].isin(VALID_LIKERT_VALUES) & df[col].notna()
+    for col in check_cols:
+        invalid = ~df[col].isin(VALID_STRUCTURED_VALUES) & df[col].notna()
         has_error = has_error | invalid
     return has_error
 
@@ -425,28 +433,57 @@ def compute_correlation_matrix(df):
     return numeric.corr()
 
 
-def get_at_risk_indicators(df):
-    """Identify students showing concerning patterns on key questions."""
-    indicators = {}
-    likert_cols = get_likert_columns(df)
-
-    key_patterns = {
+AT_RISK_PATTERNS = {
+    "Student": {
         "Don't feel safe": "feel safe",
         "Don't feel successful": "feel successful",
         "Don't like school": "i like school",
         "No trusted adult": "adult.*talk",
         "No trusted peer": "student.*talk",
         "Teachers don't treat with respect": "teachers treat me with respect",
-    }
+    },
+    "Staff": {
+        "Expectations not meaningful": "expectations meaningful",
+        "Don't teach expectations": "taught.*expectations",
+        "Not acknowledged by admin": "acknowledged by.*administrator",
+        "Not acknowledged by peers": "acknowledged by other adults",
+        "Don't use CARE language": "use the language",
+    },
+    "Parents and Family": {
+        "Child doesn't feel safe": "feel safe",
+        "Child doesn't feel successful": "feel.?successful",
+        "Rules not enforced fairly": "consistently enforced|treated fairly",
+        "Poor communication": "communicate well",
+        "Teachers lack respect": "treat.*with respect",
+    },
+}
 
-    for label, pattern in key_patterns.items():
+
+def get_at_risk_indicators(df, survey_type=None):
+    """Identify respondents showing concerning patterns on key questions."""
+    indicators = {}
+    likert_cols = get_likert_columns(df)
+    yes_no_cols = get_yes_no_columns(df)
+    all_cols = likert_cols + yes_no_cols
+
+    # Pick patterns based on survey type, fall back to trying all
+    if survey_type and survey_type in AT_RISK_PATTERNS:
+        patterns = AT_RISK_PATTERNS[survey_type]
+    else:
+        patterns = AT_RISK_PATTERNS.get("Student", {})
+
+    for label, pattern in patterns.items():
         matched_col = None
-        for col in likert_cols:
+        for col in all_cols:
             if re.search(pattern, col, re.IGNORECASE):
                 matched_col = col
                 break
         if matched_col:
-            count = (df[matched_col] == "Strongly disagree").sum()
+            # Check for negative responses (Strongly disagree for Likert, No for Yes/No)
+            if matched_col in likert_cols:
+                count = (df[matched_col] == "Strongly disagree").sum()
+            else:
+                count = (df[matched_col] == "No").sum()
             total = df[matched_col].notna().sum()
             indicators[label] = {"count": int(count), "total": int(total)}
 
@@ -515,49 +552,51 @@ def compute_group_comparison(df, question, response_value):
     return pd.DataFrame(comparison).sort_values("Difference") if comparison else pd.DataFrame()
 
 
-def generate_key_insights(df):
+def generate_key_insights(df, audience="respondents"):
     """Auto-generate plain-English insight statements from the data."""
     insights = []
     likert_cols = get_likert_columns(df)
 
-    # Find safety column
-    safety_col = None
+    # Find a key column to split on (safety, fairness, or first Likert)
+    split_col = None
     for col in likert_cols:
-        if "feel safe" in col.lower():
-            safety_col = col
+        if any(kw in col.lower() for kw in ["feel safe", "treated fairly", "communicate well"]):
+            split_col = col
             break
 
-    if safety_col:
-        unsafe = df[df[safety_col] == "Strongly disagree"]
-        safe = df[df[safety_col].isin(["Strongly agree", "Somewhat agree"])]
+    if split_col:
+        split_label = normalize_column_name(split_col)[:40]
+        negative = df[df[split_col] == "Strongly disagree"]
+        positive = df[df[split_col].isin(["Strongly agree", "Somewhat agree"])]
 
         for col in likert_cols:
-            if col == safety_col:
+            if col == split_col:
                 continue
-            unsafe_scores = unsafe[col].map(LIKERT_MAP).dropna()
-            safe_scores = safe[col].map(LIKERT_MAP).dropna()
-            if len(unsafe_scores) >= 3 and len(safe_scores) >= 3:
-                diff = safe_scores.mean() - unsafe_scores.mean()
+            neg_scores = negative[col].map(LIKERT_MAP).dropna()
+            pos_scores = positive[col].map(LIKERT_MAP).dropna()
+            if len(neg_scores) >= 3 and len(pos_scores) >= 3:
+                diff = pos_scores.mean() - neg_scores.mean()
                 if diff > 0.8:
                     q_short = normalize_column_name(col)[:50]
                     insights.append({
-                        "text": f'Students who don\'t feel safe scored **{diff:.1f} points lower** on "{q_short}" compared to students who do feel safe.',
+                        "text": f'{audience.capitalize()} who disagreed on "{split_label}" scored **{diff:.1f} points lower** on "{q_short}" compared to those who agreed.',
                         "severity": "high" if diff > 1.2 else "medium",
                     })
 
-    # Grade-based insights
+    # Grade/group-based insights
     if "_grade" in df.columns:
         scores = compute_student_scores(df)
         df_temp = df.copy()
         df_temp["_sentiment"] = scores
-        grade_means = df_temp.groupby("_grade")["_sentiment"].mean()
+        valid = df_temp.dropna(subset=["_grade", "_sentiment"])
+        grade_means = valid.groupby("_grade")["_sentiment"].mean()
         if len(grade_means) >= 2:
             best = grade_means.idxmax()
             worst = grade_means.idxmin()
             gap = grade_means[best] - grade_means[worst]
             if gap > 0.3:
                 insights.append({
-                    "text": f"**{best}** students are the most positive overall (avg {grade_means[best]:.2f}/4), while **{worst}** are the least positive (avg {grade_means[worst]:.2f}/4) - a gap of {gap:.2f} points.",
+                    "text": f"**{best}** {audience} are the most positive overall (avg {grade_means[best]:.2f}/4), while **{worst}** are the least positive (avg {grade_means[worst]:.2f}/4) - a gap of {gap:.2f} points.",
                     "severity": "medium" if gap < 0.5 else "high",
                 })
 
