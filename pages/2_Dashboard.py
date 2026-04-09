@@ -52,7 +52,7 @@ info = meta[selected_idx]
 
 # Grade/role filter - adapt label based on survey type
 if "_grade" in df.columns:
-    unique_vals = sorted(df["_grade"].unique())
+    unique_vals = sorted(df["_grade"].dropna().astype(str).unique())
     filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
     selected_vals = st.sidebar.multiselect(filter_label, unique_vals, default=unique_vals)
     df = df[df["_grade"].isin(selected_vals)]
