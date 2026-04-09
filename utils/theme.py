@@ -122,11 +122,14 @@ def _get_logo_b64():
     return None
 
 
+ALL_SURVEY_TYPES = ["All Types", "Student", "Staff", "Parents and Family", "Kickboard"]
+
+
 def apply_theme():
     """Apply the RAMS CARE red/black theme to the current page."""
     logo_b64 = _get_logo_b64()
 
-    # Inject CSS (use .format since we have { } escaped braces in the template)
+    # Inject CSS
     st.markdown(THEME_CSS, unsafe_allow_html=True)
 
     # Logo in top-left of header bar
@@ -137,3 +140,45 @@ def apply_theme():
             f'</div>',
             unsafe_allow_html=True,
         )
+
+
+def get_survey_type_filter():
+    """Add a survey type filter to the sidebar and return the selected type.
+    Returns the selected type string, or 'All Types'."""
+    return st.sidebar.selectbox(
+        "Survey Type",
+        ALL_SURVEY_TYPES,
+        key="survey_type_filter",
+        help="Filter to show only surveys of this type",
+    )
+
+
+def filter_surveys_by_type(surveys, meta, selected_type):
+    """Filter surveys and metadata by the selected survey type.
+    Returns (filtered_surveys, filtered_meta)."""
+    if selected_type == "All Types":
+        return surveys, meta
+
+    filtered_surveys = []
+    filtered_meta = []
+    for df, m in zip(surveys, meta):
+        survey_type = m.get("survey_num", "")
+        # Match on the type string (e.g., "Student", "Staff")
+        if str(survey_type) == selected_type:
+            filtered_surveys.append(df)
+            filtered_meta.append(m)
+
+    return filtered_surveys, filtered_meta
+
+
+def get_audience_label(selected_type):
+    """Return the human-friendly audience label for display text.
+    E.g., 'students', 'staff members', 'parents and families'."""
+    labels = {
+        "Student": "students",
+        "Staff": "staff members",
+        "Parents and Family": "parents and families",
+        "Kickboard": "records",
+        "All Types": "respondents",
+    }
+    return labels.get(selected_type, "respondents")

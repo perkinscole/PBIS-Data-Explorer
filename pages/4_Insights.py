@@ -13,17 +13,13 @@ from utils.charts import (
     sentiment_histogram, correlation_heatmap, group_comparison_chart,
     sentiment_by_grade_chart,
 )
-from utils.theme import apply_theme
+from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type, get_audience_label
 
 apply_theme()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
-st.title("Student Insights & Analysis")
-st.markdown(
-    "Dig deeper into student responses: detect outliers, track sentiment, "
-    "discover patterns between groups, and flag concerning responses."
-)
+st.title("Insights & Analysis")
 
 # Load data
 if not st.session_state.get("surveys"):
@@ -35,8 +31,22 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-surveys = st.session_state.surveys
-meta = st.session_state.survey_meta
+# Type filter
+selected_type = get_survey_type_filter()
+surveys, meta = filter_surveys_by_type(
+    st.session_state.surveys, st.session_state.survey_meta, selected_type
+)
+audience = get_audience_label(selected_type)
+audience_cap = audience.capitalize()
+
+if not surveys:
+    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+    st.stop()
+
+st.markdown(
+    f"Dig deeper into {audience} responses: detect outliers, track sentiment, "
+    "discover patterns between groups, and flag concerning responses."
+)
 
 # Survey selector
 survey_labels = [m["label"] for m in meta]
@@ -91,18 +101,18 @@ if flagged_count > 0:
 with st.expander("What do these flags mean?"):
     st.markdown("""
 **Straight-liners** picked the exact same answer for every single question
-(e.g., "Strongly disagree" on everything). This usually means a student
+(e.g., "Strongly disagree" on everything). This usually means the respondent
 clicked through without reading the questions.
 
 **Data Errors** are responses that contain unexpected values like numbers
 instead of "Strongly agree/disagree." These are typically form glitches
-where a student's answer didn't record properly.
+where the response didn't record properly.
 
-**Contradictions** are responses where a student's answers across different
+**Contradictions** are responses where answers across different
 topic areas are extremely inconsistent - for example, saying they love
 everything about school but also that they feel completely unsafe and
 disrespected. Some variation is normal, but extreme swings suggest the
-student may not have been answering thoughtfully.
+respondent may not have been answering thoughtfully.
 """)
 
 if flagged_count > 0:
@@ -134,9 +144,9 @@ if exclude_flagged:
 st.markdown("---")
 st.markdown("## Sentiment Overview")
 st.markdown(
-    "Each student gets a **sentiment score** based on their average response across "
-    "all questions (1 = very negative, 4 = very positive). This gives you a quick "
-    "picture of overall student satisfaction."
+    f"Each respondent gets a **sentiment score** based on their average response across "
+    f"all questions (1 = very negative, 4 = very positive). This gives you a quick "
+    f"picture of overall {audience} satisfaction."
 )
 
 scores = compute_student_scores(df)
@@ -145,27 +155,28 @@ valid_scores = scores.dropna()
 if len(valid_scores) > 0:
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Average Sentiment", f"{valid_scores.mean():.2f} / 4")
-    col2.metric("Most Positive Student", f"{valid_scores.max():.2f}")
-    col3.metric("Most Negative Student", f"{valid_scores.min():.2f}")
+    col2.metric("Most Positive", f"{valid_scores.max():.2f}")
+    col3.metric("Most Negative", f"{valid_scores.min():.2f}")
     below_2 = (valid_scores < 2.0).sum()
-    col4.metric("Students Below 2.0", int(below_2),
-                help="Students averaging below 'Somewhat disagree' - may need support")
+    col4.metric(f"{audience_cap} Below 2.0", int(below_2),
+                help="Respondents averaging below 'Somewhat disagree' - may need attention")
 
     fig = sentiment_histogram(scores)
     st.plotly_chart(fig, use_container_width=True)
 
     # Sentiment by grade
     if "_grade" in df.columns:
-        st.markdown("### Sentiment by Grade")
-        fig = sentiment_by_grade_chart(df, scores)
+        group_label = "Grade" if selected_type in ("Student", "All Types") else "Role"
+        st.markdown(f"### Sentiment by {group_label}")
+        fig = sentiment_by_grade_chart(df, scores, title=f"Sentiment by {group_label}")
         if fig:
             st.plotly_chart(fig, use_container_width=True)
 
 # At-risk indicators
 st.markdown("### At-Risk Indicators")
 st.markdown(
-    'Students who answered **"Strongly disagree"** on critical questions may need '
-    "follow-up. These are the questions most connected to student wellbeing."
+    f'{audience_cap} who answered **"Strongly disagree"** on critical questions may need '
+    "follow-up. These are the questions most connected to wellbeing."
 )
 
 indicators = get_at_risk_indicators(df)
@@ -208,7 +219,7 @@ if insights:
 st.markdown("### Question Correlation Map")
 st.markdown(
     "This map shows how strongly each pair of questions is connected. "
-    "**Dark green** = students who score high on one tend to score high on the other. "
+    f"**Dark green** = {audience} who score high on one tend to score high on the other. "
     "**Dark red** = opposite patterns. **Yellow** = no connection."
 )
 
@@ -220,9 +231,9 @@ if not corr.empty:
 # Group comparison tool
 st.markdown("### Group Comparison Tool")
 st.markdown(
-    'Pick a question and a response to see how that group of students differs '
-    'from everyone else. For example: "How do students who *don\'t feel safe* '
-    'answer all the other questions?"'
+    f'Pick a question and a response to see how that group of {audience} differs '
+    f'from everyone else. For example: "How do {audience} who *don\'t feel safe* '
+    f'answer all the other questions?"'
 )
 
 likert_cols = get_likert_columns(df)
@@ -242,7 +253,7 @@ if likert_cols:
     group_count = (df[selected_q] == selected_r).sum()
     if group_count > 0:
         st.markdown(
-            f'**{group_count} students** answered "{selected_r}" on this question. '
+            f'**{group_count} {audience}** answered "{selected_r}" on this question. '
             f"Here's how they compare to everyone else:"
         )
 
@@ -251,7 +262,7 @@ if likert_cols:
             fig = group_comparison_chart(
                 comparison,
                 group_label=f'"{selected_r}"',
-                title=f'Students who answered "{selected_r}" vs. Everyone Else',
+                title=f'{audience_cap} who answered "{selected_r}" vs. Everyone Else',
             )
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
@@ -266,11 +277,12 @@ if likert_cols:
                         f'- **{abs(row["Difference"]):.2f} points {direction}** on "{row["Question"]}"'
                     )
     else:
-        st.info(f'No students answered "{selected_r}" on this question.')
+        st.info(f'No {audience} answered "{selected_r}" on this question.')
 
 # Grade comparison
 if "_grade" in df.columns and likert_cols:
-    st.markdown("### Grade-Level Profiles")
+    profile_label = "Grade-Level Profiles" if selected_type in ("Student", "All Types") else "Group Profiles"
+    st.markdown(f"### {profile_label}")
     st.markdown("See how each grade's overall sentiment profile compares.")
 
     grade_profiles = []

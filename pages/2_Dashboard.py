@@ -9,7 +9,7 @@ from utils.charts import (
     likert_heatmap, grade_comparison_chart, yes_no_chart,
     category_radar_chart,
 )
-from utils.theme import apply_theme
+from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type, get_audience_label
 from pathlib import Path
 
 apply_theme()
@@ -28,8 +28,16 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-surveys = st.session_state.surveys
-meta = st.session_state.survey_meta
+# Type filter
+selected_type = get_survey_type_filter()
+surveys, meta = filter_surveys_by_type(
+    st.session_state.surveys, st.session_state.survey_meta, selected_type
+)
+audience = get_audience_label(selected_type)
+
+if not surveys:
+    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+    st.stop()
 
 # Survey selector
 survey_labels = [m["label"] for m in meta]
@@ -42,11 +50,12 @@ selected_idx = st.sidebar.selectbox(
 df = surveys[selected_idx]
 info = meta[selected_idx]
 
-# Grade filter
+# Grade/role filter - adapt label based on survey type
 if "_grade" in df.columns:
-    grades = sorted(df["_grade"].unique())
-    selected_grades = st.sidebar.multiselect("Filter by Grade", grades, default=grades)
-    df = df[df["_grade"].isin(selected_grades)]
+    unique_vals = sorted(df["_grade"].unique())
+    filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
+    selected_vals = st.sidebar.multiselect(filter_label, unique_vals, default=unique_vals)
+    df = df[df["_grade"].isin(selected_vals)]
 
 st.markdown(f"**{info['label']}** | {len(df)} responses")
 
@@ -62,13 +71,14 @@ cols[1].metric("Likert Questions", len(likert_cols))
 cols[2].metric("Yes/No Questions", len(yes_no_cols))
 cols[3].metric("Open-Ended Questions", len(open_cols))
 
-# Grade distribution
+# Grade/role distribution
 if "_grade" in df.columns:
-    st.markdown("### Grade Distribution")
+    dist_label = "Grade Distribution" if selected_type in ("Student", "All Types") else "Role Distribution"
+    st.markdown(f"### {dist_label}")
     grade_counts = df["_grade"].value_counts().sort_index().reset_index()
-    grade_counts.columns = ["Grade", "Count"]
+    grade_counts.columns = ["Group", "Count"]
     import plotly.express as px
-    fig = px.bar(grade_counts, x="Grade", y="Count", color="Count",
+    fig = px.bar(grade_counts, x="Group", y="Count", color="Count",
                  color_continuous_scale="Viridis")
     st.plotly_chart(fig, use_container_width=True)
 
@@ -76,7 +86,7 @@ if "_grade" in df.columns:
 if likert_cols:
     st.markdown("### Agreement Levels")
     summary = compute_likert_summary(df, likert_cols)
-    fig = likert_heatmap(summary, title="How students responded to each question")
+    fig = likert_heatmap(summary, title=f"How {audience} responded to each question")
     st.plotly_chart(fig, use_container_width=True)
 
 # Category radar
@@ -86,10 +96,10 @@ if likert_cols:
     fig = category_radar_chart(scores)
     st.plotly_chart(fig, use_container_width=True)
 
-# Grade comparison
+# Grade/role comparison
 if likert_cols and "_grade" in df.columns:
-    st.markdown("### Compare by Grade")
-    # Use the original unfiltered data for grade comparison
+    compare_label = "Compare by Grade" if selected_type in ("Student", "All Types") else "Compare by Role"
+    st.markdown(f"### {compare_label}")
     full_df = surveys[selected_idx]
     selected_q = st.selectbox(
         "Select question",

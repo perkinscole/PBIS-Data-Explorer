@@ -5,7 +5,7 @@ from utils.data_loader import (
     get_open_response_columns, normalize_column_name, classify_column,
     compute_agreement_score, QUESTION_CATEGORIES, LIKERT_MAP,
 )
-from utils.theme import apply_theme
+from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type
 from pathlib import Path
 
 apply_theme()
@@ -25,8 +25,15 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-surveys = st.session_state.surveys
-meta = st.session_state.survey_meta
+# Type filter
+selected_type = get_survey_type_filter()
+surveys, meta = filter_surveys_by_type(
+    st.session_state.surveys, st.session_state.survey_meta, selected_type
+)
+
+if not surveys:
+    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+    st.stop()
 
 # --- Section 1: Question Evolution ---
 st.markdown("### Question Evolution Across Surveys")
