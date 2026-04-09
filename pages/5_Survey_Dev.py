@@ -323,7 +323,7 @@ with tab_existing:
     for cat in sorted(existing_by_cat.keys()):
         st.markdown(f"**{cat}**")
         for q, qtype in existing_by_cat[cat]:
-            if st.checkbox(q[:80], key=f"eq_{q[:40]}", value=True):
+            if st.checkbox(q[:80], key=f"eq_{hash(q)}", value=True):
                 selected_questions.append({
                     "question": q,
                     "type": qtype,
@@ -335,7 +335,7 @@ with tab_new:
     for cat, questions in SUGGESTED_NEW_QUESTIONS.items():
         st.markdown(f"**{cat}**")
         for q, qtype in questions:
-            if st.checkbox(f"  {q}", key=f"nq_{q[:40]}"):
+            if st.checkbox(f"  {q}", key=f"nq_{hash(q)}"):
                 selected_questions.append({
                     "question": q,
                     "type": qtype,
