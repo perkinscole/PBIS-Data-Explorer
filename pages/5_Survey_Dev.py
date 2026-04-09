@@ -219,3 +219,229 @@ suggestions.extend([
 
 for i, s in enumerate(suggestions, 1):
     st.markdown(f"{i}. {s}")
+
+# --- Section 5: Survey Generator ---
+st.markdown("---")
+st.markdown("### Survey Generator")
+st.markdown(
+    "Build a new survey from your existing questions and suggested additions. "
+    "The output is formatted so you can copy it directly into **Google Forms**."
+)
+
+# Question bank: pull from all existing questions + new suggestions
+SUGGESTED_NEW_QUESTIONS = {
+    "School Belonging": [
+        ("I feel like my opinions are heard and valued at RAMS.", "likert"),
+        ("I feel welcome when I walk into RAMS each day.", "likert"),
+    ],
+    "Safety": [
+        ("I feel safe in the hallways and common areas at RAMS.", "likert"),
+        ("I feel safe in my classrooms at RAMS.", "likert"),
+    ],
+    "Success": [
+        ("My teachers help me set goals for my learning.", "likert"),
+        ("I believe I can be successful at RAMS.", "likert"),
+    ],
+    "Teacher Respect": [
+        ("Teachers listen to students when they have concerns.", "likert"),
+        ("I feel that teachers care about me as a person.", "likert"),
+    ],
+    "Student Respect": [
+        ("Students at RAMS are kind to each other online and on social media.", "likert"),
+    ],
+    "Social-Emotional Learning": [
+        ("I have learned strategies to manage my emotions at RAMS.", "likert"),
+        ("I know how to resolve conflicts peacefully.", "likert"),
+        ("I feel comfortable asking for help when I need it.", "likert"),
+    ],
+    "CARE Values": [
+        ("I can explain what the RAMS CARE values mean to me.", "likert"),
+    ],
+    "Behavior Support": [
+        ("The reward system at RAMS motivates me to show positive behavior.", "likert"),
+    ],
+    "Peer Connections": [
+        ("I have at least one friend at RAMS I can count on.", "likert"),
+    ],
+    "School Environment": [
+        ("RAMS is a clean and well-maintained school.", "likert"),
+        ("I feel proud to be a student at RAMS.", "likert"),
+    ],
+    "Family & Community": [
+        ("My family feels welcome at RAMS.", "likert"),
+        ("RAMS does a good job communicating with my family.", "likert"),
+    ],
+}
+
+# Survey type selector
+survey_audience = st.selectbox(
+    "Who is this survey for?",
+    ["Student", "Staff", "Parents and Family"],
+    key="gen_audience",
+)
+
+st.markdown("#### Select Questions")
+st.markdown(
+    "Check the questions you want to include. "
+    "Existing questions come from your uploaded surveys. "
+    "New suggested questions are marked with a star."
+)
+
+selected_questions = []
+
+# Tab layout: existing vs new
+tab_existing, tab_new, tab_custom = st.tabs([
+    "Existing Questions", "Suggested New Questions", "Write Your Own"
+])
+
+with tab_existing:
+    st.markdown("*Questions from your uploaded surveys:*")
+
+    # Group existing questions by category
+    existing_by_cat = {}
+    for q, info in all_questions.items():
+        cat = None
+        q_lower = q.lower()
+        for category, patterns in QUESTION_CATEGORIES.items():
+            for p in patterns:
+                if p.lower() in q_lower:
+                    cat = category.replace("_", " ").title()
+                    break
+            if cat:
+                break
+        if not cat:
+            cat = "Other"
+        existing_by_cat.setdefault(cat, []).append((q, info["type"]))
+
+    for cat in sorted(existing_by_cat.keys()):
+        st.markdown(f"**{cat}**")
+        for q, qtype in existing_by_cat[cat]:
+            if st.checkbox(q[:80], key=f"eq_{q[:40]}", value=True):
+                selected_questions.append({
+                    "question": q,
+                    "type": qtype,
+                    "source": "existing",
+                })
+
+with tab_new:
+    st.markdown("*Suggested additions based on PBIS best practices:*")
+    for cat, questions in SUGGESTED_NEW_QUESTIONS.items():
+        st.markdown(f"**{cat}**")
+        for q, qtype in questions:
+            if st.checkbox(f"  {q}", key=f"nq_{q[:40]}"):
+                selected_questions.append({
+                    "question": q,
+                    "type": qtype,
+                    "source": "new",
+                })
+
+with tab_custom:
+    st.markdown("*Add your own questions:*")
+    custom_count = st.number_input(
+        "How many custom questions?", min_value=0, max_value=20, value=0, key="custom_count"
+    )
+    for i in range(int(custom_count)):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            q_text = st.text_input(f"Question {i+1}", key=f"cq_text_{i}")
+        with col2:
+            q_type = st.selectbox(
+                "Type",
+                ["likert", "yes_no", "open_response"],
+                format_func=lambda x: {"likert": "Agree/Disagree", "yes_no": "Yes/No", "open_response": "Open-ended"}[x],
+                key=f"cq_type_{i}",
+            )
+        if q_text.strip():
+            selected_questions.append({
+                "question": q_text.strip(),
+                "type": q_type,
+                "source": "custom",
+            })
+
+# Preview and export
+st.markdown("---")
+st.markdown("#### Survey Preview")
+st.markdown(f"**{len(selected_questions)} questions selected** for {survey_audience} survey")
+
+if selected_questions:
+    # Build the survey output
+    lines = []
+    lines.append(f"RAMS CARE Survey ({survey_audience})")
+    lines.append("=" * 50)
+    lines.append("")
+
+    # Always start with grade/role question
+    if survey_audience == "Student":
+        lines.append("1. What grade am I in?")
+        lines.append("   Type: Multiple choice")
+        lines.append("   Options: 6th Grade, 7th Grade, 8th Grade")
+        lines.append("")
+        q_num = 2
+    elif survey_audience == "Staff":
+        lines.append("1. What is your role?")
+        lines.append("   Type: Multiple choice")
+        lines.append("   Options: Teacher, Administrator, Counselor, Support Staff, Other")
+        lines.append("")
+        q_num = 2
+    else:
+        lines.append("1. What grade is your child in?")
+        lines.append("   Type: Multiple choice")
+        lines.append("   Options: 6th Grade, 7th Grade, 8th Grade, Multiple grades")
+        lines.append("")
+        q_num = 2
+
+    for item in selected_questions:
+        q = item["question"]
+        qtype = item["type"]
+        star = " (NEW)" if item["source"] == "new" else ""
+        star = " (CUSTOM)" if item["source"] == "custom" else star
+
+        lines.append(f"{q_num}. {q}{star}")
+
+        if qtype == "likert":
+            lines.append("   Type: Multiple choice (single answer)")
+            lines.append("   Options: Strongly agree, Somewhat agree, Somewhat disagree, Strongly disagree")
+        elif qtype == "yes_no":
+            lines.append("   Type: Multiple choice (single answer)")
+            lines.append("   Options: Yes, No")
+        elif qtype == "open_response":
+            lines.append("   Type: Long answer text")
+
+        lines.append("")
+        q_num += 1
+
+    survey_text = "\n".join(lines)
+
+    # Display preview
+    st.text_area(
+        "Survey (copy this into Google Forms)",
+        survey_text,
+        height=400,
+        key="survey_preview",
+    )
+
+    # Copy-friendly summary
+    st.markdown("#### Google Forms Instructions")
+    st.markdown(f"""
+1. Go to [forms.google.com](https://forms.google.com) and create a new blank form
+2. Title it: **RAMS CARE Survey ({survey_audience})**
+3. For each question above:
+   - **Agree/Disagree** questions: Use "Multiple choice" and add the four options
+   - **Yes/No** questions: Use "Multiple choice" with Yes and No
+   - **Open-ended** questions: Use "Long answer"
+4. Under Settings, turn on **"Limit to 1 response"** if using school accounts
+5. Consider making all questions **required**
+
+**Tip:** In Google Forms you can duplicate a question to quickly create
+multiple Agree/Disagree questions with the same answer options.
+""")
+
+    # Download as text file
+    st.download_button(
+        "Download Survey as Text File",
+        survey_text,
+        file_name=f"RAMS_CARE_Survey_{survey_audience}_{pd.Timestamp.now().strftime('%Y%m%d')}.txt",
+        mime="text/plain",
+    )
+else:
+    st.info("Select questions from the tabs above to build your survey.")
