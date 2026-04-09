@@ -143,7 +143,17 @@ def load_survey_file(filepath):
 
     grade_col = [c for c in df.columns if "grade" in c.lower()]
     if grade_col:
-        df["_grade"] = df[grade_col[0]].astype(str).str.strip()
+        raw_grade = df[grade_col[0]].astype(str).str.strip()
+        # Filter out junk: Likert responses, numeric garbage, NaN
+        invalid_values = {
+            "strongly agree", "somewhat agree", "somewhat disagree",
+            "strongly disagree", "yes", "no", "nan", "none", "",
+            "n/a", "n/a (non-applicable)",
+        }
+        raw_grade = raw_grade.where(
+            ~raw_grade.str.lower().isin(invalid_values), other=pd.NA
+        )
+        df["_grade"] = raw_grade
 
     return df, meta
 
