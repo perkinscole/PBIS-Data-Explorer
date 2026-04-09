@@ -103,12 +103,12 @@ if uploaded_files:
             except (ValueError, IndexError):
                 pass
 
+        YEARS = list(range(2020, 2036))
         with col2:
-            year = st.number_input(
+            year = st.selectbox(
                 "Year",
-                min_value=2020,
-                max_value=2035,
-                value=detected_year or 2026,
+                YEARS,
+                index=YEARS.index(detected_year) if detected_year in YEARS else YEARS.index(2026),
                 key=f"year_{f.name}",
             )
 
