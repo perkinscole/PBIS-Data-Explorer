@@ -36,9 +36,11 @@ spreadsheets, visualize results, track trends over time, and develop stronger su
 4. **Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
 5. **Survey Development** -- Analyze and improve survey questions
 6. **Benchmarks** -- Compare RAMS results against MetroWest regional data
-7. **Goals** -- Set and track progress toward PBIS targets
-8. **Actions** -- Data-driven recommendations for improvement
-9. **Feedback** -- Report bugs or request new features
+7. **Compare** -- Side-by-side before/after survey comparison
+8. **Report** -- Generate downloadable summary reports
+9. **Goals** -- Set and track progress toward PBIS targets
+10. **Actions** -- Data-driven recommendations for improvement
+11. **Feedback** -- Report bugs or request new features
 """)
 
 # Initialize session state for shared data
