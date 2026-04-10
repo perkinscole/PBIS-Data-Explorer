@@ -16,10 +16,8 @@ if "survey_meta" not in st.session_state:
 
 # Define pages with section grouping
 pages = {
-    "": [
-        st.Page("pages/00_Home.py", title="Home", icon=":material/home:", default=True),
-    ],
     "Data": [
+        st.Page("pages/00_Home.py", title="Home", icon=":material/home:", default=True),
         st.Page("pages/01_Upload.py", title="Upload", icon=":material/upload_file:"),
     ],
     "Analysis": [

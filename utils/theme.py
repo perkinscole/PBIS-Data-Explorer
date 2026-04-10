@@ -143,18 +143,6 @@ def apply_theme():
             unsafe_allow_html=True,
         )
 
-    # Collapse sidebar nav sections by default
-    st.html("""
-        <script>
-        const collapse = () => {
-            const details = window.parent.document.querySelectorAll(
-                '[data-testid="stSidebarNav"] details[open]'
-            );
-            details.forEach(el => el.removeAttribute('open'));
-        };
-        setTimeout(collapse, 200);
-        </script>
-    """)
 
 
 def get_filter_container():
