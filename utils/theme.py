@@ -147,15 +147,45 @@ def apply_theme(collapse_nav=False):
     if collapse_nav:
         st.html("""
             <script>
-            function collapseNav() {
+            (function() {
                 const doc = window.parent.document;
-                const details = doc.querySelectorAll('[data-testid="stSidebarNav"] details[open]');
-                details.forEach(el => el.removeAttribute('open'));
-            }
-            collapseNav();
-            setTimeout(collapseNav, 100);
-            setTimeout(collapseNav, 300);
-            setTimeout(collapseNav, 600);
+                let userClicked = false;
+
+                // Mark when user actually clicks a summary element
+                doc.addEventListener('click', function(e) {
+                    if (e.target.closest('[data-testid="stSidebarNav"] summary')) {
+                        userClicked = true;
+                    }
+                });
+
+                function collapseAll() {
+                    if (userClicked) return;
+                    const details = doc.querySelectorAll('[data-testid="stSidebarNav"] details[open]');
+                    details.forEach(el => el.removeAttribute('open'));
+                }
+
+                // Watch for Streamlit re-adding [open] and collapse it
+                const observer = new MutationObserver(function(mutations) {
+                    if (userClicked) { observer.disconnect(); return; }
+                    collapseAll();
+                });
+
+                const nav = doc.querySelector('[data-testid="stSidebarNav"]');
+                if (nav) {
+                    observer.observe(nav, { attributes: true, subtree: true, attributeFilter: ['open'] });
+                }
+
+                // Also run on timers as backup
+                collapseAll();
+                setTimeout(collapseAll, 50);
+                setTimeout(collapseAll, 150);
+                setTimeout(collapseAll, 400);
+                setTimeout(collapseAll, 800);
+                setTimeout(collapseAll, 1500);
+
+                // Stop observing after 3 seconds regardless
+                setTimeout(function() { observer.disconnect(); }, 3000);
+            })();
             </script>
         """)
 
