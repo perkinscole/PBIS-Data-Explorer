@@ -110,6 +110,8 @@ THEME_CSS = """
     a {
         color: #8b1a1a !important;
     }
+
+
 </style>
 """
 
@@ -140,6 +142,20 @@ def apply_theme():
             f'</div>',
             unsafe_allow_html=True,
         )
+
+    # Collapse sidebar nav sections by default
+    import streamlit.components.v1 as components
+    components.html("""
+        <script>
+        const collapse = () => {
+            const details = window.parent.document.querySelectorAll(
+                '[data-testid="stSidebarNav"] details[open]'
+            );
+            details.forEach(el => el.removeAttribute('open'));
+        };
+        setTimeout(collapse, 200);
+        </script>
+    """, height=0)
 
 
 def get_filter_container():
