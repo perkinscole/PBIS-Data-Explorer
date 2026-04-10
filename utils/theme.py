@@ -127,7 +127,7 @@ def _get_logo_b64():
 ALL_SURVEY_TYPES = ["All Types", "Student", "Staff", "Parents and Family"]
 
 
-def apply_theme():
+def apply_theme(collapse_nav=False):
     """Apply the RAMS CARE red/black theme to the current page."""
     logo_b64 = _get_logo_b64()
 
@@ -142,6 +142,22 @@ def apply_theme():
             f'</div>',
             unsafe_allow_html=True,
         )
+
+    # Optionally collapse all nav sections (used on Home page)
+    if collapse_nav:
+        st.html("""
+            <script>
+            function collapseNav() {
+                const doc = window.parent.document;
+                const details = doc.querySelectorAll('[data-testid="stSidebarNav"] details[open]');
+                details.forEach(el => el.removeAttribute('open'));
+            }
+            collapseNav();
+            setTimeout(collapseNav, 100);
+            setTimeout(collapseNav, 300);
+            setTimeout(collapseNav, 600);
+            </script>
+        """)
 
 
 

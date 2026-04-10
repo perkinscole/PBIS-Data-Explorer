@@ -2,7 +2,7 @@ import streamlit as st
 from pathlib import Path
 from utils.theme import apply_theme
 
-apply_theme()
+apply_theme(collapse_nav=True)
 
 logo_path = Path(__file__).parent.parent / "assets" / "logo.png"
 
