@@ -1,6 +1,5 @@
 import streamlit as st
 from pathlib import Path
-from utils.theme import apply_theme
 
 st.set_page_config(
     page_title="RAMS CARE Data Viewer",
@@ -9,45 +8,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-apply_theme()
-
-logo_path = Path(__file__).parent / "assets" / "logo.png"
-
-# --- Main page ---
-col1, col2 = st.columns([1, 4])
-with col1:
-    if logo_path.exists():
-        st.image(str(logo_path), width=120)
-with col2:
-    st.markdown("# RAMS CARE Data Viewer")
-    st.markdown("*PBIS Survey Analysis & Insights*")
-
-st.markdown("""
----
-
-Welcome to the **RAMS CARE Data Viewer**! This tool helps the CARE team upload survey
-spreadsheets, visualize results, track trends over time, and develop stronger survey questions.
-
-**Get started** using the sidebar:
-
-1. **Upload Data** -- Load your survey files
-2. **Dashboard** -- Explore visualizations of survey results
-3. **Trends** -- Compare results across survey periods
-4. **Cohorts** -- Track grade cohorts over time (per question, per category)
-5. **Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
-6. **Survey Development** -- Analyze and improve survey questions
-7. **Benchmarks** -- Compare RAMS results against MetroWest regional data
-8. **Compare** -- Side-by-side before/after survey comparison
-9. **Report** -- Generate downloadable summary reports
-10. **Goals (Beta)** -- Set and track progress toward PBIS targets
-11. **Actions** -- Data-driven recommendations for improvement
-12. **Feedback** -- Report bugs or request new features
-""")
-
 # Initialize session state for shared data
 if "surveys" not in st.session_state:
     st.session_state.surveys = []
 if "survey_meta" not in st.session_state:
     st.session_state.survey_meta = []
 
+# Define pages with section grouping
+pages = {
+    "": [
+        st.Page("pages/00_Home.py", title="Home", icon=":material/home:", default=True),
+    ],
+    "Data": [
+        st.Page("pages/01_Upload.py", title="Upload", icon=":material/upload_file:"),
+    ],
+    "Analysis": [
+        st.Page("pages/02_Survey_Dashboard.py", title="Survey Dashboard", icon=":material/dashboard:"),
+        st.Page("pages/03_Trends.py", title="Trends", icon=":material/trending_up:"),
+        st.Page("pages/04_Cohorts.py", title="Cohorts", icon=":material/group:"),
+        st.Page("pages/05_1:1_Compare.py", title="1:1 Compare", icon=":material/compare_arrows:"),
+        st.Page("pages/06_MetroWest_Benchmarks.py", title="MetroWest Benchmarks", icon=":material/leaderboard:"),
+        st.Page("pages/07_Insights.py", title="Insights", icon=":material/psychology:"),
+    ],
+    "Planning": [
+        st.Page("pages/08_Survey_Dev.py", title="Survey Development", icon=":material/edit_note:"),
+        st.Page("pages/09_Goals_(Beta).py", title="Goals (Beta)", icon=":material/flag:"),
+        st.Page("pages/10_Actions.py", title="Actions", icon=":material/checklist:"),
+        st.Page("pages/11_Report.py", title="Report", icon=":material/description:"),
+    ],
+    "Support": [
+        st.Page("pages/12_Feedback.py", title="Feedback", icon=":material/feedback:"),
+    ],
+}
+
+pg = st.navigation(pages)
+
+# Sidebar extras
+st.sidebar.markdown("---")
 st.sidebar.caption("RAMS CARE Data Viewer v1.1")
+
+pg.run()
