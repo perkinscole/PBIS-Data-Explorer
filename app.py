@@ -33,8 +33,8 @@ pages = {
     "Planning": [
         st.Page("pages/08_Survey_Dev.py", title="Survey Development", icon=":material/edit_note:"),
         st.Page("pages/09_Goals_(Beta).py", title="Goals (Beta)", icon=":material/flag:"),
-        st.Page("pages/10_Actions.py", title="Actions", icon=":material/checklist:"),
-        st.Page("pages/11_Report.py", title="Report", icon=":material/description:"),
+        st.Page("pages/10_Actions.py", title="Recommended Actions", icon=":material/checklist:"),
+        st.Page("pages/11_Report.py", title="Generate Report", icon=":material/description:"),
     ],
     "Support": [
         st.Page("pages/12_Feedback.py", title="Feedback", icon=":material/feedback:"),
