@@ -50,7 +50,7 @@ st.markdown(
 
 # Survey selector
 survey_labels = [m["label"] for m in meta]
-selected_idx = st.sidebar.selectbox(
+selected_idx = st.selectbox(
     "Select Survey",
     range(len(survey_labels)),
     format_func=lambda i: survey_labels[i],

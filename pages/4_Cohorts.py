@@ -133,7 +133,7 @@ multi_cohorts = sorted(multi_cohorts)
 st.success(f"Found **{len(multi_cohorts)} cohorts** with data across multiple survey periods.")
 
 # Cohort selector
-selected_cohorts = st.sidebar.multiselect(
+selected_cohorts = st.multiselect(
     "Select Cohorts",
     multi_cohorts,
     default=multi_cohorts,

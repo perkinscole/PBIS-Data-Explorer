@@ -47,7 +47,7 @@ if not surveys:
 
 # Let user pick which survey to compare
 survey_labels = [m["label"] for m in meta]
-selected_idx = st.sidebar.selectbox(
+selected_idx = st.selectbox(
     "Compare Survey",
     range(len(survey_labels)),
     format_func=lambda i: survey_labels[i],

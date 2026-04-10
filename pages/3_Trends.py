@@ -69,10 +69,10 @@ if len(surveys) >= 2:
     trend_df = trend_df.sort_values("Period")
 
     # Filters
-    st.sidebar.markdown("### Filters")
+    st.markdown("### Filters")
 
     # Period selector
-    selected_periods = st.sidebar.multiselect(
+    selected_periods = st.multiselect(
         "Survey Periods",
         sorted_periods,
         default=sorted_periods,
@@ -84,7 +84,7 @@ if len(surveys) >= 2:
     # Category filter
     categories = sorted(trend_df["Category"].unique())
     category_labels = {c: c.replace("_", " ").title() for c in categories}
-    selected_cats = st.sidebar.multiselect(
+    selected_cats = st.multiselect(
         "Question Categories",
         categories,
         default=[c for c in categories if c != "other"],

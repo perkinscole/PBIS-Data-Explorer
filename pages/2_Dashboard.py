@@ -42,7 +42,7 @@ if not surveys:
 
 # Survey selector
 survey_labels = [m["label"] for m in meta]
-selected_idx = st.sidebar.selectbox(
+selected_idx = st.selectbox(
     "Select Survey",
     range(len(survey_labels)),
     format_func=lambda i: survey_labels[i],
@@ -56,7 +56,7 @@ if "_grade" in df.columns:
     unique_vals = sorted(df["_grade"].dropna().astype(str).unique())
     if unique_vals:
         filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
-        selected_vals = st.sidebar.multiselect(filter_label, unique_vals, default=unique_vals)
+        selected_vals = st.multiselect(filter_label, unique_vals, default=unique_vals)
         df = df[df["_grade"].astype(str).isin(selected_vals)]
 
 st.markdown(f"**{info['label']}** | {len(df)} responses")

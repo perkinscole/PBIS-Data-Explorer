@@ -143,11 +143,12 @@ def apply_theme():
 
 
 def get_survey_type_filter():
-    """Add a survey type filter to the sidebar and return the selected type.
+    """Add a survey type filter as a horizontal bar at the top of the page.
     Returns the selected type string, or 'All Types'."""
-    return st.sidebar.selectbox(
+    return st.radio(
         "Survey Type",
         ALL_SURVEY_TYPES,
+        horizontal=True,
         key="survey_type_filter",
         help="Filter to show only surveys of this type",
     )
