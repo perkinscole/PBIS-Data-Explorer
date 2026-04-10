@@ -35,8 +35,8 @@ spreadsheets, visualize results, track trends over time, and develop stronger su
 3. **Trends** -- Compare results across survey periods
 4. **Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
 5. **Survey Development** -- Analyze and improve survey questions
-6. **Feedback** -- Report bugs or request new features
-7. **Benchmarks** -- Compare RAMS results against MetroWest regional data
+6. **Benchmarks** -- Compare RAMS results against MetroWest regional data
+7. **Feedback** -- Report bugs or request new features
 """)
 
 # Initialize session state for shared data
