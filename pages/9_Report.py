@@ -10,7 +10,7 @@ from utils.data_loader import (
     QUESTION_CATEGORIES,
 )
 from utils.benchmarks import compute_rams_percentages, load_benchmarks
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type, get_audience_label
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type, get_audience_label
 
 apply_theme()
 
@@ -32,24 +32,23 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-selected_type = get_survey_type_filter()
-surveys, meta = filter_surveys_by_type(
-    st.session_state.surveys, st.session_state.survey_meta, selected_type
-)
-end_control_panel()
-audience = get_audience_label(selected_type)
+with get_filter_container():
+    selected_type = get_survey_type_filter()
+    surveys, meta = filter_surveys_by_type(
+        st.session_state.surveys, st.session_state.survey_meta, selected_type
+    )
+    audience = get_audience_label(selected_type)
 
-if not surveys:
-    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
-    st.stop()
+    if not surveys:
+        st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+        st.stop()
 
-# Survey selector
-survey_labels = [m["label"] for m in meta]
-selected_idx = st.selectbox(
-    "Select survey for report",
-    range(len(survey_labels)),
-    format_func=lambda i: survey_labels[i],
-)
+    survey_labels = [m["label"] for m in meta]
+    selected_idx = st.selectbox(
+        "Select survey for report",
+        range(len(survey_labels)),
+        format_func=lambda i: survey_labels[i],
+    )
 df = surveys[selected_idx]
 info = meta[selected_idx]
 

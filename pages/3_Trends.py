@@ -6,7 +6,7 @@ from utils.data_loader import (
     sort_periods, match_category, LIKERT_MAP, QUESTION_CATEGORIES,
 )
 from utils.charts import trend_line_chart
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type, get_audience_label
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type, get_audience_label
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
@@ -29,11 +29,11 @@ if not st.session_state.get("surveys"):
         st.stop()
 
 # Type filter
-selected_type = get_survey_type_filter()
+with get_filter_container():
+    selected_type = get_survey_type_filter()
 surveys, meta = filter_surveys_by_type(
     st.session_state.surveys, st.session_state.survey_meta, selected_type
 )
-end_control_panel()
 audience = get_audience_label(selected_type)
 
 if len(surveys) < 2:

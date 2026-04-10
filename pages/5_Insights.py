@@ -13,7 +13,7 @@ from utils.charts import (
     sentiment_histogram, correlation_heatmap, group_comparison_chart,
     sentiment_by_grade_chart,
 )
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type, get_audience_label
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type, get_audience_label
 
 apply_theme()
 
@@ -31,32 +31,31 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-# Type filter
-selected_type = get_survey_type_filter()
-surveys, meta = filter_surveys_by_type(
-    st.session_state.surveys, st.session_state.survey_meta, selected_type
-)
-end_control_panel()
-audience = get_audience_label(selected_type)
-audience_cap = audience.capitalize()
+# Filter card
+with get_filter_container():
+    selected_type = get_survey_type_filter()
+    surveys, meta = filter_surveys_by_type(
+        st.session_state.surveys, st.session_state.survey_meta, selected_type
+    )
+    audience = get_audience_label(selected_type)
+    audience_cap = audience.capitalize()
 
-if not surveys:
-    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
-    st.stop()
+    if not surveys:
+        st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+        st.stop()
+
+    survey_labels = [m["label"] for m in meta]
+    selected_idx = st.selectbox(
+        "Select Survey",
+        range(len(survey_labels)),
+        format_func=lambda i: survey_labels[i],
+    )
+    df = surveys[selected_idx]
 
 st.markdown(
     f"Dig deeper into {audience} responses: detect outliers, track sentiment, "
     "discover patterns between groups, and flag concerning responses."
 )
-
-# Survey selector
-survey_labels = [m["label"] for m in meta]
-selected_idx = st.selectbox(
-    "Select Survey",
-    range(len(survey_labels)),
-    format_func=lambda i: survey_labels[i],
-)
-df = surveys[selected_idx]
 
 # ============================================================
 # SECTION 1: RESPONSE QUALITY & OUTLIER DETECTION

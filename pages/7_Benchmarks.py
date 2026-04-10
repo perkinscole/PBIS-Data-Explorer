@@ -7,7 +7,7 @@ from utils.benchmarks import (
     DEFAULT_BENCHMARKS, compute_rams_percentages,
     load_benchmarks, save_benchmarks, parse_mwahs_pdf,
 )
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type
 
 apply_theme()
 
@@ -29,32 +29,30 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-# Filter to student surveys only (MWAHS is student-focused)
-selected_type = get_survey_type_filter()
-surveys, meta = filter_surveys_by_type(
-    st.session_state.surveys, st.session_state.survey_meta, selected_type
-)
-end_control_panel()
-
-# Load benchmarks
-benchmarks = load_benchmarks(str(DATA_DIR))
-
-if not surveys:
-    st.info(
-        f"No {selected_type} surveys loaded. The MWAHS benchmarks compare best with **Student** surveys. "
-        "Upload student survey data or change the type filter."
+# Filter card
+with get_filter_container():
+    selected_type = get_survey_type_filter()
+    surveys, meta = filter_surveys_by_type(
+        st.session_state.surveys, st.session_state.survey_meta, selected_type
     )
-    st.stop()
 
-# Let user pick which survey to compare
-survey_labels = [m["label"] for m in meta]
-selected_idx = st.selectbox(
-    "Compare Survey",
-    range(len(survey_labels)),
-    format_func=lambda i: survey_labels[i],
-)
-df = surveys[selected_idx]
-survey_label = meta[selected_idx]["label"]
+    benchmarks = load_benchmarks(str(DATA_DIR))
+
+    if not surveys:
+        st.info(
+            f"No {selected_type} surveys loaded. The MWAHS benchmarks compare best with **Student** surveys. "
+            "Upload student survey data or change the type filter."
+        )
+        st.stop()
+
+    survey_labels = [m["label"] for m in meta]
+    selected_idx = st.selectbox(
+        "Compare Survey",
+        range(len(survey_labels)),
+        format_func=lambda i: survey_labels[i],
+    )
+    df = surveys[selected_idx]
+    survey_label = meta[selected_idx]["label"]
 
 # Compute RAMS percentages
 rams_pcts = compute_rams_percentages(df)

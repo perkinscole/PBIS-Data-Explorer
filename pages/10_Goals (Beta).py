@@ -8,7 +8,7 @@ from utils.data_loader import (
     sort_periods, LIKERT_MAP, QUESTION_CATEGORIES,
 )
 from utils.goals import load_goals, save_goals, compute_goal_progress
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type
 
 apply_theme()
 
@@ -30,11 +30,11 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-selected_type = get_survey_type_filter()
+with get_filter_container():
+    selected_type = get_survey_type_filter()
 surveys, meta = filter_surveys_by_type(
     st.session_state.surveys, st.session_state.survey_meta, selected_type
 )
-end_control_panel()
 
 if not surveys:
     st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")

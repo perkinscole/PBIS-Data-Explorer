@@ -6,7 +6,7 @@ from utils.data_loader import (
     load_all_surveys, get_likert_columns, get_yes_no_columns,
     normalize_column_name, match_category, LIKERT_MAP, QUESTION_CATEGORIES,
 )
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type
 
 apply_theme()
 
@@ -28,26 +28,25 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-selected_type = get_survey_type_filter()
-surveys, meta = filter_surveys_by_type(
-    st.session_state.surveys, st.session_state.survey_meta, selected_type
-)
-end_control_panel()
+with get_filter_container():
+    selected_type = get_survey_type_filter()
+    surveys, meta = filter_surveys_by_type(
+        st.session_state.surveys, st.session_state.survey_meta, selected_type
+    )
 
-if len(surveys) < 2:
-    st.info("Need at least 2 surveys to compare. Upload more data or change the type filter.")
-    st.stop()
+    if len(surveys) < 2:
+        st.info("Need at least 2 surveys to compare. Upload more data or change the type filter.")
+        st.stop()
 
-# Survey pickers
-survey_labels = [m["label"] for m in meta]
-col1, col2 = st.columns(2)
-with col1:
-    idx_a = st.selectbox("Survey A (Before)", range(len(survey_labels)),
-                         format_func=lambda i: survey_labels[i], index=0)
-with col2:
-    default_b = min(1, len(survey_labels) - 1)
-    idx_b = st.selectbox("Survey B (After)", range(len(survey_labels)),
-                         format_func=lambda i: survey_labels[i], index=default_b)
+    survey_labels = [m["label"] for m in meta]
+    col1, col2 = st.columns(2)
+    with col1:
+        idx_a = st.selectbox("Survey A (Before)", range(len(survey_labels)),
+                             format_func=lambda i: survey_labels[i], index=0)
+    with col2:
+        default_b = min(1, len(survey_labels) - 1)
+        idx_b = st.selectbox("Survey B (After)", range(len(survey_labels)),
+                             format_func=lambda i: survey_labels[i], index=default_b)
 
 if idx_a == idx_b:
     st.warning("Please select two different surveys to compare.")

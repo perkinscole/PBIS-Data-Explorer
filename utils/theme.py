@@ -142,18 +142,33 @@ def apply_theme():
         )
 
 
+def get_filter_container():
+    """Return a styled st.container for filter widgets. Use with `with` block:
+        with get_filter_container():
+            selected_type = get_survey_type_filter()
+            # ... more filters
+    """
+    # Inject CSS to style the next container element
+    st.markdown("""
+<style>
+    div[data-testid="stVerticalBlock"] > div:has(> div.filter-card-marker) {
+        background-color: #f9f0f0;
+        border: 1px solid #d4a3a3;
+        border-radius: 10px;
+        padding: 20px 24px 8px 24px;
+        margin-bottom: 20px;
+    }
+</style>
+""", unsafe_allow_html=True)
+    container = st.container()
+    return container
+
+
 def get_survey_type_filter():
-    """Add a survey type filter inside a styled control panel at the top of the page.
+    """Add a survey type filter as horizontal radio buttons.
     Returns the selected type string, or 'All Types'."""
-    st.markdown(
-        '<div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d1515 100%); '
-        'border-radius: 10px; padding: 14px 20px 2px 20px; margin-bottom: 16px; '
-        'border: 1px solid #8b1a1a;">'
-        '<span style="color: #e8c4c4; font-size: 0.75em; font-weight: 600; '
-        'letter-spacing: 1.5px; text-transform: uppercase;">'
-        'CONTROL PANEL</span></div>',
-        unsafe_allow_html=True,
-    )
+    # Marker div so CSS can target the parent container
+    st.markdown('<div class="filter-card-marker"></div>', unsafe_allow_html=True)
     selected = st.radio(
         "Survey Type",
         ALL_SURVEY_TYPES,
@@ -164,11 +179,8 @@ def get_survey_type_filter():
 
 
 def end_control_panel():
-    """Add a visual separator after the control panel section."""
-    st.markdown(
-        '<hr style="border: none; border-top: 2px solid #8b1a1a; margin: 8px 0 20px 0;">',
-        unsafe_allow_html=True,
-    )
+    """Legacy — now a no-op, card styling handled by container CSS."""
+    pass
 
 
 def _infer_survey_type(meta):

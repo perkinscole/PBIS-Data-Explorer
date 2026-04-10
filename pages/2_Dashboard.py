@@ -10,7 +10,7 @@ from utils.charts import (
     likert_heatmap, grade_comparison_chart, yes_no_chart,
     category_radar_chart,
 )
-from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type, get_audience_label
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, get_filter_container, filter_surveys_by_type, get_audience_label
 from pathlib import Path
 
 apply_theme()
@@ -29,36 +29,36 @@ if not st.session_state.get("surveys"):
         st.warning("No data loaded. Go to the Upload page first.")
         st.stop()
 
-# Type filter
-selected_type = get_survey_type_filter()
-surveys, meta = filter_surveys_by_type(
-    st.session_state.surveys, st.session_state.survey_meta, selected_type
-)
-end_control_panel()
-audience = get_audience_label(selected_type)
+# Filter card
+with get_filter_container():
+    selected_type = get_survey_type_filter()
+    surveys, meta = filter_surveys_by_type(
+        st.session_state.surveys, st.session_state.survey_meta, selected_type
+    )
+    audience = get_audience_label(selected_type)
 
-if not surveys:
-    st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
-    st.stop()
+    if not surveys:
+        st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")
+        st.stop()
 
-# Survey selector
-survey_labels = [m["label"] for m in meta]
-selected_idx = st.selectbox(
-    "Select Survey",
-    range(len(survey_labels)),
-    format_func=lambda i: survey_labels[i],
-)
+    survey_labels = [m["label"] for m in meta]
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_idx = st.selectbox(
+            "Select Survey",
+            range(len(survey_labels)),
+            format_func=lambda i: survey_labels[i],
+        )
+    df = surveys[selected_idx]
+    info = meta[selected_idx]
 
-df = surveys[selected_idx]
-info = meta[selected_idx]
-
-# Grade/role filter
-if "_grade" in df.columns:
-    unique_vals = sorted(df["_grade"].dropna().astype(str).unique())
-    if unique_vals:
-        filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
-        selected_vals = st.multiselect(filter_label, unique_vals, default=unique_vals)
-        df = df[df["_grade"].astype(str).isin(selected_vals)]
+    with col2:
+        if "_grade" in df.columns:
+            unique_vals = sorted(df["_grade"].dropna().astype(str).unique())
+            if unique_vals:
+                filter_label = "Filter by Grade" if selected_type in ("Student", "All Types") else "Filter by Role"
+                selected_vals = st.multiselect(filter_label, unique_vals, default=unique_vals)
+                df = df[df["_grade"].astype(str).isin(selected_vals)]
 
 st.markdown(f"**{info['label']}** | {len(df)} responses")
 
