@@ -143,32 +143,14 @@ def apply_theme():
 
 
 def get_filter_container():
-    """Return a styled st.container for filter widgets. Use with `with` block:
-        with get_filter_container():
-            selected_type = get_survey_type_filter()
-            # ... more filters
-    """
-    # Inject CSS to style the next container element
-    st.markdown("""
-<style>
-    div[data-testid="stVerticalBlock"] > div:has(> div.filter-card-marker) {
-        background-color: #f9f0f0;
-        border: 1px solid #d4a3a3;
-        border-radius: 10px;
-        padding: 20px 24px 8px 24px;
-        margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
-    container = st.container()
-    return container
+    """Return a bordered st.container for filter widgets. Use with `with` block."""
+    st.subheader("Survey Selector")
+    return st.container(border=True)
 
 
 def get_survey_type_filter():
     """Add a survey type filter as horizontal radio buttons.
     Returns the selected type string, or 'All Types'."""
-    # Marker div so CSS can target the parent container
-    st.markdown('<div class="filter-card-marker"></div>', unsafe_allow_html=True)
     selected = st.radio(
         "Survey Type",
         ALL_SURVEY_TYPES,
@@ -179,7 +161,7 @@ def get_survey_type_filter():
 
 
 def end_control_panel():
-    """Legacy — now a no-op, card styling handled by container CSS."""
+    """Legacy no-op."""
     pass
 
 
