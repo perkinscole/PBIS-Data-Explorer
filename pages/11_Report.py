@@ -291,6 +291,74 @@ if st.button("Generate Report", type="primary"):
         type="primary",
     )
 
+    # PowerPoint export
+    from utils.pptx_export import generate_pptx
+    from utils.actions import generate_recommendations
+    from utils.benchmarks import compute_rams_percentages as _bench_pcts, load_benchmarks as _load_bench
+
+    pptx_sections = {}
+    # Overview
+    grades_dict = {}
+    if "_grade" in df.columns:
+        grades_dict = df["_grade"].dropna().value_counts().to_dict()
+    pptx_sections["overview"] = {
+        "responses": len(df), "likert_qs": len(likert_cols),
+        "yn_qs": len(yes_no_cols), "open_qs": len(open_cols),
+        "grades": grades_dict,
+    }
+    # Agreement
+    agreement_items = []
+    for col in likert_cols:
+        valid = df[col].dropna()
+        if len(valid) > 0:
+            pos = valid.isin(["Strongly agree", "Somewhat agree"]).sum()
+            agreement_items.append((normalize_column_name(col)[:50], pos / len(valid) * 100))
+    pptx_sections["agreement"] = agreement_items
+    # Categories
+    cat_scores_pptx = {}
+    for col in likert_cols:
+        cat = match_category(col)
+        if cat:
+            mapped = df[col].map(LIKERT_MAP).dropna()
+            if len(mapped) > 0:
+                cat_scores_pptx.setdefault(cat, []).append(mapped.mean())
+    pptx_sections["categories"] = [
+        (cat.replace("_", " ").title(), sum(v)/len(v), sum(v)/len(v)/4*100)
+        for cat, v in sorted(cat_scores_pptx.items(), key=lambda x: sum(x[1])/len(x[1]), reverse=True)
+    ]
+    # Benchmarks
+    try:
+        _benchmarks = _load_bench(str(DATA_DIR))
+        _rpcts = _bench_pcts(df)
+        pptx_sections["benchmarks"] = [
+            (ind, _rpcts[ind]["pct"], b["mwahs_pct"], _rpcts[ind]["pct"] - b["mwahs_pct"])
+            for ind, b in _benchmarks["indicators"].items() if ind in _rpcts
+        ]
+    except Exception:
+        pass
+    # Insights
+    _insights = generate_key_insights(df, audience=audience)
+    pptx_sections["insights"] = [i["text"] for i in _insights[:8]]
+    # At-risk
+    _at_risk = get_at_risk_indicators(df, survey_type=selected_type)
+    pptx_sections["at_risk"] = [
+        (label, info_ar["count"], info_ar["total"],
+         info_ar["count"]/info_ar["total"]*100 if info_ar["total"]>0 else 0)
+        for label, info_ar in _at_risk.items()
+    ]
+    # Actions
+    _cat_avgs = {c: sum(v)/len(v) for c, v in cat_scores_pptx.items()}
+    _recs = generate_recommendations(_cat_avgs)
+    pptx_sections["actions"] = [(r["priority"], r["action"], r["finding"]) for r in _recs[:6]]
+
+    pptx_bytes = generate_pptx(info["label"], pptx_sections)
+    st.download_button(
+        "Download Report (PowerPoint)",
+        pptx_bytes,
+        file_name=f"RAMS_CARE_Report_{info['label'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pptx",
+        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+
     # Also offer CSV export
     st.markdown("---")
     st.markdown("### Data Export")

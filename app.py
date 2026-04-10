@@ -29,12 +29,16 @@ pages = {
         st.Page("pages/05_1:1_Compare.py", title="1:1 Compare", icon=":material/compare_arrows:"),
         st.Page("pages/06_MetroWest_Benchmarks.py", title="MetroWest Benchmarks", icon=":material/leaderboard:"),
         st.Page("pages/07_Insights.py", title="Insights", icon=":material/psychology:"),
+        st.Page("pages/13_Data_Dialogue.py", title="Data Dialogue", icon=":material/forum:"),
+        st.Page("pages/14_Report_Card.py", title="Report Card", icon=":material/grade:"),
+        st.Page("pages/15_Perception_Gaps.py", title="Perception Gaps", icon=":material/swap_horiz:"),
     ],
     "Planning": [
         st.Page("pages/08_Survey_Dev.py", title="Survey Development", icon=":material/edit_note:"),
         st.Page("pages/09_Goals_(Beta).py", title="Goals (Beta)", icon=":material/flag:"),
         st.Page("pages/10_Actions.py", title="Recommended Actions", icon=":material/checklist:"),
         st.Page("pages/11_Report.py", title="Generate Report", icon=":material/description:"),
+        st.Page("pages/16_Alerts.py", title="Alerts", icon=":material/notifications:"),
     ],
     "Support": [
         st.Page("pages/12_Feedback.py", title="Feedback", icon=":material/feedback:"),

@@ -380,3 +380,83 @@ if not sentiment_df.empty:
             st.info("No clearly negative responses detected.")
 else:
     st.info("No open-ended responses found in this survey.")
+
+# ============================================================
+# SECTION 5: AI-POWERED THEME ANALYSIS
+# ============================================================
+open_cols_ai = get_open_response_columns(df)
+if open_cols_ai:
+    st.markdown("---")
+    st.markdown("## AI Theme Analysis")
+    st.markdown(
+        "Use AI to automatically identify themes in open-ended responses. "
+        "Requires an Anthropic API key."
+    )
+
+    from utils.ai_themes import get_api_key, extract_themes
+
+    api_key = get_api_key()
+    if not api_key:
+        api_key = st.text_input(
+            "Anthropic API Key",
+            type="password",
+            help="Enter your Anthropic API key to enable AI theme extraction. Get one at console.anthropic.com",
+        )
+
+    if api_key:
+        selected_ai_q = st.selectbox(
+            "Select question to analyze",
+            open_cols_ai,
+            format_func=lambda c: normalize_column_name(c)[:75],
+            key="ai_q",
+        )
+
+        responses_for_ai = df[selected_ai_q].dropna().astype(str)
+        responses_for_ai = responses_for_ai[responses_for_ai.str.len() > 5].tolist()
+
+        if st.button("Analyze with AI", type="primary"):
+            if len(responses_for_ai) < 3:
+                st.warning("Need at least 3 responses to analyze.")
+            else:
+                with st.spinner("Analyzing responses with Claude..."):
+                    cache_key = f"ai_themes_{hash(selected_ai_q)}_{len(responses_for_ai)}"
+                    if cache_key in st.session_state:
+                        result = st.session_state[cache_key]
+                    else:
+                        result = extract_themes(
+                            responses_for_ai,
+                            question_text=normalize_column_name(selected_ai_q),
+                            api_key=api_key,
+                        )
+                        if result:
+                            st.session_state[cache_key] = result
+
+                if result and "error" not in result:
+                    st.markdown(f"**Summary:** {result.get('summary', '')}")
+                    st.caption(f"Analyzed {result.get('responses_analyzed', 0)} of {result.get('total_responses', 0)} responses")
+
+                    themes = result.get("themes", [])
+                    for theme in themes:
+                        sent = theme.get("sentiment", "neutral")
+                        if sent == "positive":
+                            color, bg = "#27ae60", "#d5f5e3"
+                        elif sent == "negative":
+                            color, bg = "#e74c3c", "#fadbd8"
+                        else:
+                            color, bg = "#f39c12", "#fef9e7"
+
+                        st.markdown(
+                            f'<div style="background-color:{bg}; border-left:4px solid {color}; '
+                            f'padding:12px 16px; border-radius:6px; margin-bottom:10px;">'
+                            f'<strong>{theme["name"]}</strong> '
+                            f'<small>({theme.get("count", "?")} responses, {sent})</small><br>'
+                            f'<em>"{theme.get("quote", "")}"</em>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                elif result and "error" in result:
+                    st.error(f"AI analysis failed: {result['error']}")
+                else:
+                    st.error("Could not get a response from the AI. Check your API key.")
+    else:
+        st.caption("Enter an API key above or set ANTHROPIC_API_KEY as an environment variable.")
