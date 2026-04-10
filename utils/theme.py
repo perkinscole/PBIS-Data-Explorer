@@ -144,8 +144,7 @@ def apply_theme():
         )
 
     # Collapse sidebar nav sections by default
-    import streamlit.components.v1 as components
-    components.html("""
+    st.html("""
         <script>
         const collapse = () => {
             const details = window.parent.document.querySelectorAll(
@@ -155,7 +154,7 @@ def apply_theme():
         };
         setTimeout(collapse, 200);
         </script>
-    """, height=0)
+    """)
 
 
 def get_filter_container():
