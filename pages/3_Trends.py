@@ -181,6 +181,150 @@ if len(surveys) >= 2:
                     st.markdown("*No questions declined between these periods.*")
 
 # ============================================================
+# COHORT TRACKING
+# ============================================================
+if len(surveys) >= 2 and selected_type in ("Student", "All Types"):
+    st.markdown("---")
+    st.markdown("## Cohort Tracking")
+    st.markdown(
+        "Follow the same group of students as they progress through RAMS. "
+        "For example, 6th graders in 2024 become 7th graders in 2025."
+    )
+
+    # Build cohort data: parse grade number and school year from each survey
+    import re as _re
+
+    GRADE_NUM = {"6th grade": 6, "7th grade": 7, "8th grade": 8, "grade 6": 6, "grade 7": 7, "grade 8": 8}
+    MONTH_TO_NUM = {
+        "january": 1, "february": 2, "march": 3, "april": 4, "may": 5,
+        "may-june": 5, "june": 6, "july": 7, "august": 8, "september": 9,
+        "october": 10, "november": 11, "december": 12,
+    }
+
+    def get_school_year(period):
+        """Convert a period like 'October 2025' to a school year like 2025-2026."""
+        parts = period.rsplit(" ", 1)
+        if len(parts) != 2:
+            return None
+        month_str, year_str = parts
+        try:
+            year = int(year_str)
+        except ValueError:
+            return None
+        month_num = MONTH_TO_NUM.get(month_str.lower(), 0)
+        if month_num >= 8:  # Aug-Dec = first half of school year
+            return f"{year}-{year + 1}"
+        else:  # Jan-Jul = second half of school year
+            return f"{year - 1}-{year}"
+
+    def get_graduation_year(grade_num, school_year):
+        """Compute 8th grade graduation year for a cohort."""
+        if not school_year or not grade_num:
+            return None
+        start_year = int(school_year.split("-")[0])
+        years_until_8th = 8 - grade_num
+        return start_year + years_until_8th + 1  # +1 for spring graduation
+
+    cohort_rows = []
+    for df_c, m_c in zip(surveys, meta):
+        if "_grade" not in df_c.columns:
+            continue
+        school_year = get_school_year(m_c["period"])
+        if not school_year:
+            continue
+
+        likert_cols_c = get_likert_columns(df_c)
+        if not likert_cols_c:
+            continue
+
+        for grade_str in df_c["_grade"].dropna().unique():
+            grade_lower = str(grade_str).lower().strip()
+            grade_num = GRADE_NUM.get(grade_lower)
+            if not grade_num:
+                continue
+
+            grad_year = get_graduation_year(grade_num, school_year)
+            if not grad_year:
+                continue
+
+            grade_df = df_c[df_c["_grade"].astype(str).str.lower().str.strip() == grade_lower]
+            if len(grade_df) < 3:
+                continue
+
+            # Compute average % positive for this grade in this survey
+            positive_counts = []
+            for col in likert_cols_c:
+                valid = grade_df[col].dropna()
+                if len(valid) > 0:
+                    pos = valid.isin(["Strongly agree", "Somewhat agree"]).sum()
+                    positive_counts.append(pos / len(valid) * 100)
+            if positive_counts:
+                avg_pct = sum(positive_counts) / len(positive_counts)
+                cohort_rows.append({
+                    "Cohort": f"Class of {grad_year}",
+                    "Grade": f"{grade_num}th Grade",
+                    "Period": m_c["period"],
+                    "School Year": school_year,
+                    "Avg % Positive": round(avg_pct, 1),
+                    "Students": len(grade_df),
+                })
+
+    if cohort_rows:
+        cohort_df = pd.DataFrame(cohort_rows)
+        cohorts_with_multiple = cohort_df.groupby("Cohort").filter(lambda x: len(x) > 1)["Cohort"].unique()
+
+        if len(cohorts_with_multiple) > 0:
+            st.markdown(
+                f"Found **{len(cohorts_with_multiple)} cohorts** with data across multiple survey periods."
+            )
+
+            # Line chart: one line per cohort
+            plot_df = cohort_df[cohort_df["Cohort"].isin(cohorts_with_multiple)]
+            plot_df = plot_df.sort_values("Period")
+            plot_df["Label"] = plot_df["Grade"] + " (" + plot_df["Period"] + ")"
+
+            fig = px.line(
+                plot_df,
+                x="Label",
+                y="Avg % Positive",
+                color="Cohort",
+                markers=True,
+                title="How Each Cohort's Positivity Changes Over Time",
+            )
+            fig.update_layout(
+                yaxis_range=[0, 105],
+                yaxis_title="Average % Positive",
+                xaxis_title="",
+                height=450,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Summary table
+            st.markdown("### Cohort Details")
+            summary_rows = []
+            for cohort in sorted(cohorts_with_multiple):
+                cdf = cohort_df[cohort_df["Cohort"] == cohort].sort_values("Period")
+                first = cdf.iloc[0]
+                last = cdf.iloc[-1]
+                change = last["Avg % Positive"] - first["Avg % Positive"]
+                summary_rows.append({
+                    "Cohort": cohort,
+                    "First Survey": f"{first['Grade']} ({first['Period']})",
+                    "Latest Survey": f"{last['Grade']} ({last['Period']})",
+                    "Start %": f"{first['Avg % Positive']:.0f}%",
+                    "Latest %": f"{last['Avg % Positive']:.0f}%",
+                    "Change": f"{change:+.1f}%",
+                })
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+        else:
+            st.info(
+                "Need surveys from at least **2 different school years** to track cohorts. "
+                "Upload more survey data spanning multiple years."
+            )
+    else:
+        st.info("No grade-level data found for cohort tracking. This works best with Student surveys.")
+
+# ============================================================
 # CROSS-SURVEY TYPE COMPARISON (only show when "All Types" selected)
 # ============================================================
 if selected_type == "All Types":

@@ -32,11 +32,13 @@ spreadsheets, visualize results, track trends over time, and develop stronger su
 
 1. **Upload Data** -- Load your survey files
 2. **Dashboard** -- Explore visualizations of survey results
-3. **Trends** -- Compare results across survey periods
+3. **Trends** -- Compare results across survey periods, cohort tracking
 4. **Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
 5. **Survey Development** -- Analyze and improve survey questions
 6. **Benchmarks** -- Compare RAMS results against MetroWest regional data
-7. **Feedback** -- Report bugs or request new features
+7. **Goals** -- Set and track progress toward PBIS targets
+8. **Actions** -- Data-driven recommendations for improvement
+9. **Feedback** -- Report bugs or request new features
 """)
 
 # Initialize session state for shared data
