@@ -143,14 +143,31 @@ def apply_theme():
 
 
 def get_survey_type_filter():
-    """Add a survey type filter as a horizontal bar at the top of the page.
+    """Add a survey type filter inside a styled control panel at the top of the page.
     Returns the selected type string, or 'All Types'."""
-    return st.radio(
+    st.markdown(
+        '<div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d1515 100%); '
+        'border-radius: 10px; padding: 14px 20px 2px 20px; margin-bottom: 16px; '
+        'border: 1px solid #8b1a1a;">'
+        '<span style="color: #e8c4c4; font-size: 0.75em; font-weight: 600; '
+        'letter-spacing: 1.5px; text-transform: uppercase;">'
+        'CONTROL PANEL</span></div>',
+        unsafe_allow_html=True,
+    )
+    selected = st.radio(
         "Survey Type",
         ALL_SURVEY_TYPES,
         horizontal=True,
         key="survey_type_filter",
-        help="Filter to show only surveys of this type",
+    )
+    return selected
+
+
+def end_control_panel():
+    """Add a visual separator after the control panel section."""
+    st.markdown(
+        '<hr style="border: none; border-top: 2px solid #8b1a1a; margin: 8px 0 20px 0;">',
+        unsafe_allow_html=True,
     )
 
 

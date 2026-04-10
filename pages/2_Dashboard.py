@@ -10,7 +10,7 @@ from utils.charts import (
     likert_heatmap, grade_comparison_chart, yes_no_chart,
     category_radar_chart,
 )
-from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type, get_audience_label
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type, get_audience_label
 from pathlib import Path
 
 apply_theme()
@@ -34,6 +34,7 @@ selected_type = get_survey_type_filter()
 surveys, meta = filter_surveys_by_type(
     st.session_state.surveys, st.session_state.survey_meta, selected_type
 )
+end_control_panel()
 audience = get_audience_label(selected_type)
 
 if not surveys:

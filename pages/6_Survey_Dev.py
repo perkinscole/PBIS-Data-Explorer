@@ -5,7 +5,7 @@ from utils.data_loader import (
     get_open_response_columns, normalize_column_name, classify_column,
     compute_agreement_score, QUESTION_CATEGORIES, LIKERT_MAP,
 )
-from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type
 from pathlib import Path
 
 apply_theme()
@@ -30,6 +30,7 @@ selected_type = get_survey_type_filter()
 surveys, meta = filter_surveys_by_type(
     st.session_state.surveys, st.session_state.survey_meta, selected_type
 )
+end_control_panel()
 
 if not surveys:
     st.info(f"No {selected_type} surveys loaded. Upload data or change the type filter.")

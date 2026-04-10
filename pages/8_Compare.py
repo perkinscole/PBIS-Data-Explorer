@@ -6,7 +6,7 @@ from utils.data_loader import (
     load_all_surveys, get_likert_columns, get_yes_no_columns,
     normalize_column_name, match_category, LIKERT_MAP, QUESTION_CATEGORIES,
 )
-from utils.theme import apply_theme, get_survey_type_filter, filter_surveys_by_type
+from utils.theme import apply_theme, get_survey_type_filter, end_control_panel, filter_surveys_by_type
 
 apply_theme()
 
@@ -32,6 +32,7 @@ selected_type = get_survey_type_filter()
 surveys, meta = filter_surveys_by_type(
     st.session_state.surveys, st.session_state.survey_meta, selected_type
 )
+end_control_panel()
 
 if len(surveys) < 2:
     st.info("Need at least 2 surveys to compare. Upload more data or change the type filter.")
