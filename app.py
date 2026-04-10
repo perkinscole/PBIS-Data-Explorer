@@ -33,8 +33,9 @@ spreadsheets, visualize results, track trends over time, and develop stronger su
 1. **Upload Data** -- Load your survey files
 2. **Dashboard** -- Explore visualizations of survey results
 3. **Trends** -- Compare results across survey periods
-4. **Student Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
+4. **Insights** -- Outlier detection, sentiment analysis, and cross-question patterns
 5. **Survey Development** -- Analyze and improve survey questions
+6. **Feedback** -- Report bugs or request new features
 """)
 
 # Initialize session state for shared data
